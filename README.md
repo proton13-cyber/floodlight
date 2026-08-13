@@ -13,6 +13,12 @@ behind them.
 
 _Links go live once GitHub Pages is enabled: Settings → Pages → Source `main`, folder `/docs`._
 
+Until then, the timelapse renders through the htmlpreview proxy — no setup, works today:
+
+```
+https://htmlpreview.github.io/?https://github.com/proton13-cyber/floodlight/blob/main/docs/timelapse.html
+```
+
 ## Quickstart
 
 ```bash
