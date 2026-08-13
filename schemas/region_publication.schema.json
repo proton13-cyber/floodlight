@@ -1,0 +1,328 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mdao.local/schemas/region_publication/v1.json",
+  "title": "DisciplinaryRegionPublication",
+  "description": "The single artifact a discipline agent publishes to the blackboard. It describes a REGION of the shared design space that the discipline believes is feasible, conditioned on assumed values of coupling variables it does not own. It is not a design; it is a claim about a set, and it is only meaningful together with its conditioning and validity domain.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "publication_id",
+    "discipline",
+    "agent",
+    "design_space_ref",
+    "mission_ref",
+    "created_at",
+    "status",
+    "validity",
+    "conditioning",
+    "provides",
+    "constraints",
+    "evidence"
+  ],
+
+  "properties": {
+    "schema_version": { "const": "1.0.0" },
+
+    "publication_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9_.-]{3,63}$",
+      "description": "Immutable. Recommended form <discipline>-r<round>-<content_sha8>. Never reuse; publish a new id and set 'supersedes'."
+    },
+    "supersedes": {
+      "type": ["string", "null"],
+      "description": "publication_id this replaces. The orchestrator must not intersect a superseded publication."
+    },
+
+    "discipline": {
+      "enum": ["aerodynamics", "structures", "weights", "propulsion", "gnc", "performance", "cost", "requirements"]
+    },
+
+    "agent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "run_id"],
+      "properties": {
+        "id": { "type": "string", "description": "Stable agent identity, e.g. 'aero-agent'." },
+        "model": { "type": "string" },
+        "prompt_version": { "type": "string" },
+        "run_id": { "type": "string", "description": "Unique per execution. Required for replay." }
+      }
+    },
+
+    "design_space_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version", "hash"],
+      "description": "HARD GATE. Publications whose design_space_ref hashes differ describe sets over different spaces and must never be intersected.",
+      "properties": {
+        "id": { "type": "string" },
+        "version": { "type": "integer", "minimum": 1 },
+        "hash": { "type": "string" }
+      }
+    },
+
+    "mission_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "hash"],
+      "properties": {
+        "id": { "type": "string" },
+        "hash": { "type": "string" }
+      }
+    },
+
+    "created_at": { "type": "string", "format": "date-time" },
+    "status": { "enum": ["draft", "published", "superseded", "retracted"] },
+    "round": { "type": "integer", "minimum": 0, "description": "Fixed-point iteration index this publication belongs to." },
+
+    "validity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["box", "extrapolation_policy"],
+      "description": "Where the surrogates in this publication may be evaluated. Outside it they do not fail, they LIE. Enforce, do not trust.",
+      "properties": {
+        "box": {
+          "type": "object",
+          "description": "Map design-variable name -> [lo, hi] actually sampled during training.",
+          "additionalProperties": {
+            "type": "array",
+            "items": { "type": "number" },
+            "minItems": 2,
+            "maxItems": 2
+          }
+        },
+        "hull": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Optional tighter-than-box domain description.",
+          "properties": {
+            "type": { "enum": ["none", "convex_hull", "mahalanobis", "one_class_svm"] },
+            "artifact": { "$ref": "#/$defs/artifact" },
+            "threshold": { "type": "number" }
+          }
+        },
+        "extrapolation_policy": {
+          "enum": ["reject", "flag_and_widen_uncertainty"],
+          "description": "'reject' means the orchestrator must discard candidate points outside the box rather than trusting an extrapolated margin."
+        }
+      }
+    },
+
+    "active_subspace": {
+      "type": "array",
+      "description": "Which shared design variables actually move this discipline's constraints. Cheap to compute, and the overlap pattern across disciplines tells you where the real coupling is.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["variable", "sensitivity"],
+        "properties": {
+          "variable": { "type": "string" },
+          "sensitivity": { "type": "number", "minimum": 0, "description": "Normalized |d g / d x_hat| aggregated over constraints, 0-1." },
+          "method": { "enum": ["morris", "sobol_total", "gradient_rms", "active_subspace_eig", "expert"] }
+        }
+      }
+    },
+
+    "conditioning": {
+      "type": "array",
+      "description": "THE MOST IMPORTANT FIELD. Coupling variables this discipline consumed but does not own. The published region is drawn ASSUMING these values. Change them and the region moves. An intersection computed across publications with mutually inconsistent conditioning is meaningless even if it is non-empty.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["coupling_variable", "assumed_value", "units", "source", "drift_tolerance"],
+        "properties": {
+          "coupling_variable": { "type": "string" },
+          "assumed_value": { "type": "number" },
+          "units": { "type": "string" },
+          "source": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["type"],
+            "properties": {
+              "type": { "enum": ["publication", "seed", "requirement", "expert_estimate"] },
+              "publication_id": { "type": ["string", "null"] },
+              "note": { "type": "string" }
+            }
+          },
+          "drift_tolerance": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["kind", "value"],
+            "description": "How far the true (supplier-produced) value may drift from assumed_value before this region must be re-derived. This is what turns 'overlap' into a fixed point.",
+            "properties": {
+              "kind": { "enum": ["relative", "absolute"] },
+              "value": { "type": "number", "exclusiveMinimum": 0 }
+            }
+          }
+        }
+      }
+    },
+
+    "provides": {
+      "type": "array",
+      "description": "Coupling variables this discipline supplies, as surrogates over the shared design vector. Required so the orchestrator can test the fixed point: supplier-produced value vs. consumer-assumed value at the same x.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["coupling_variable", "units", "surrogate"],
+        "properties": {
+          "coupling_variable": { "type": "string" },
+          "units": { "type": "string" },
+          "surrogate": { "$ref": "#/$defs/surrogate" }
+        }
+      }
+    },
+
+    "constraints": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Publish MARGINS, not booleans. A feasible/infeasible classifier throws away exactly the information the orchestrator needs to steer.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "description", "sense", "normalization", "surrogate"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[A-Z0-9_.-]{3,48}$" },
+          "description": { "type": "string" },
+          "requirement_ref": { "type": ["string", "null"], "description": "Traceability to the requirement this enforces." },
+          "sense": {
+            "const": "le_zero",
+            "description": "Deliberately the only allowed sense. All constraints are normalized to g(x) <= 0 so margins are comparable ACROSS disciplines. Convert at publication time, not at intersection time."
+          },
+          "normalization": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["kind", "scale", "description"],
+            "properties": {
+              "kind": { "enum": ["limit_relative", "absolute_scale", "sigma"] },
+              "scale": { "type": "number", "exclusiveMinimum": 0, "description": "g = (value - limit) / scale. g = -0.1 means 10% of scale in hand." },
+              "description": { "type": "string" }
+            }
+          },
+          "criticality": { "enum": ["hard", "soft", "advisory"], "default": "hard" },
+          "surrogate": { "$ref": "#/$defs/surrogate", "description": "Evaluates the NORMALIZED margin g(x)." },
+          "reporting": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "Optional human-readable physical quantity behind the margin.",
+            "properties": {
+              "physical_expression": { "type": "string" },
+              "limit": { "type": "number" },
+              "units": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+
+    "objectives": {
+      "type": "array",
+      "description": "What this discipline would minimize. Used for corner-finding once the intersection is non-empty; good designs sit on the boundary, not the interior.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "direction", "surrogate"],
+        "properties": {
+          "id": { "type": "string" },
+          "direction": { "enum": ["minimize", "maximize"] },
+          "units": { "type": "string" },
+          "surrogate": { "$ref": "#/$defs/surrogate" }
+        }
+      }
+    },
+
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tool", "n_evaluations"],
+      "description": "Provenance. Without this you cannot replay a design from six weeks ago, and asynchronous agents make that a certainty rather than a risk.",
+      "properties": {
+        "tool": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["name", "version"],
+          "properties": {
+            "name": { "type": "string", "description": "e.g. ASWING, AVL, XFOIL, NASTRAN, in-house Raymer sizing." },
+            "version": { "type": "string" },
+            "fidelity": { "enum": ["empirical", "low", "medium", "high"] }
+          }
+        },
+        "method_ref": { "type": "string", "description": "Citable method, e.g. 'Raymer 6th ed. Ch.15 GA group weights'." },
+        "n_evaluations": { "type": "integer", "minimum": 1 },
+        "doe": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "type": { "enum": ["lhs", "sobol", "full_factorial", "adaptive", "manual"] },
+            "seed": { "type": "integer" }
+          }
+        },
+        "input_deck_refs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/artifact" },
+          "description": "Content-addressed input decks. Required to reproduce."
+        },
+        "convergence_notes": { "type": "string" },
+        "known_limitations": { "type": "string" }
+      }
+    }
+  },
+
+  "$defs": {
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["uri", "sha256"],
+      "properties": {
+        "uri": { "type": "string" },
+        "sha256": { "type": "string" },
+        "media_type": { "type": "string" }
+      }
+    },
+
+    "surrogate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["form", "inputs"],
+      "description": "A cheap evaluable model over the shared design vector plus this publication's conditioning values.",
+      "properties": {
+        "form": {
+          "enum": ["analytic", "polynomial", "gp", "artifact", "table"],
+          "description": "'analytic' is for demos and closed-form methods. Production surrogates should be 'artifact' (ONNX/joblib) since evaluating arbitrary expressions is a code-execution surface."
+        },
+        "inputs": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Names referenced by the model: design variables, conditioning coupling variables, or design-space constants."
+        },
+        "expression": { "type": "string", "description": "Required when form=analytic. Vectorized, numpy-safe subset." },
+        "coefficients": { "type": "array", "items": { "type": "number" } },
+        "basis": { "type": "string" },
+        "artifact": { "$ref": "#/$defs/artifact" },
+        "loader": { "enum": ["onnxruntime", "joblib", "pickle", "json"] },
+        "fit": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "n_train": { "type": "integer" },
+            "r2": { "type": "number" },
+            "rmse": { "type": "number" },
+            "cv": { "type": "string" }
+          }
+        },
+        "sigma": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Predictive standard deviation. If present the orchestrator can require g + k*sigma <= 0 for reliability-aware feasibility.",
+          "properties": {
+            "form": { "enum": ["constant", "analytic", "artifact"] },
+            "value": { "type": "number" },
+            "expression": { "type": "string" },
+            "artifact": { "$ref": "#/$defs/artifact" }
+          }
+        }
+      }
+    }
+  }
+}
