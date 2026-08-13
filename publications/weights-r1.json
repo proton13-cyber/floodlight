@@ -1,0 +1,130 @@
+{
+  "schema_version": "1.0.0",
+  "publication_id": "weights-r1-4b81de77",
+  "supersedes": null,
+  "discipline": "weights",
+  "round": 1,
+  "agent": {
+    "id": "weights-agent",
+    "model": "claude-opus-5",
+    "prompt_version": "wts-v0.2",
+    "run_id": "run_2026-08-11T14:03:02Z_c19a"
+  },
+  "design_space_ref": { "id": "uav-medium", "version": 1, "hash": "sha256:PLACEHOLDER_COMPUTED_BY_TOOLING" },
+  "mission_ref": { "id": "ref-mission-A", "hash": "sha256:PLACEHOLDER" },
+  "created_at": "2026-08-11T14:07:19Z",
+  "status": "published",
+
+  "validity": {
+    "box": {
+      "S_ref": [8.0, 25.0],
+      "AR": [8.0, 24.0],
+      "t_c": [0.08, 0.18],
+      "sweep_c4": [0.0, 15.0],
+      "W0": [400.0, 1200.0],
+      "P_SL": [40.0, 160.0]
+    },
+    "extrapolation_policy": "reject"
+  },
+
+  "active_subspace": [
+    { "variable": "W0", "sensitivity": 1.0, "method": "sobol_total" },
+    { "variable": "P_SL", "sensitivity": 0.52, "method": "sobol_total" },
+    { "variable": "S_ref", "sensitivity": 0.11, "method": "sobol_total" },
+    { "variable": "AR", "sensitivity": 0.04, "method": "sobol_total" },
+    { "variable": "t_c", "sensitivity": 0.02, "method": "sobol_total" },
+    { "variable": "sweep_c4", "sensitivity": 0.0, "method": "sobol_total" }
+  ],
+
+  "conditioning": [
+    {
+      "coupling_variable": "W_structure",
+      "assumed_value": 165.0,
+      "units": "kg",
+      "source": { "type": "seed", "publication_id": null, "note": "Seed from the design-space registry. Structures had not published at the time this round was launched — this is exactly the assumption the orchestrator must audit." },
+      "drift_tolerance": { "kind": "relative", "value": 0.08 }
+    },
+    {
+      "coupling_variable": "n_z_ult",
+      "assumed_value": 5.7,
+      "units": "g",
+      "source": { "type": "requirement", "publication_id": null, "note": "Frozen." },
+      "drift_tolerance": { "kind": "absolute", "value": 0.01 }
+    }
+  ],
+
+  "provides": [
+    {
+      "coupling_variable": "W_empty",
+      "units": "kg",
+      "surrogate": {
+        "form": "analytic",
+        "inputs": ["W_structure", "W0", "P_SL"],
+        "expression": "W_structure + 0.14*W0 + 1.1*P_SL**0.9 + 45.0",
+        "fit": { "n_train": 512, "r2": 0.994, "rmse": 7.1, "cv": "5-fold" },
+        "sigma": { "form": "constant", "value": 9.0 }
+      }
+    }
+  ],
+
+  "constraints": [
+    {
+      "id": "WTS.CLOSURE",
+      "description": "Mass closure: empty + payload + mission fuel must fit inside the design gross mass. This is the sizing fixed point in constraint form.",
+      "requirement_ref": "REQ-CLOSE",
+      "sense": "le_zero",
+      "normalization": { "kind": "limit_relative", "scale": 1.0, "description": "g expressed as a fraction of W0; g=-0.15 means 15% of gross mass in hand." },
+      "criticality": "hard",
+      "surrogate": {
+        "form": "analytic",
+        "inputs": ["W_structure", "W0", "P_SL"],
+        "expression": "((W_structure + 0.14*W0 + 1.1*P_SL**0.9 + 45.0) + 90.0 + 0.18*W0 - W0) / W0",
+        "fit": { "n_train": 512, "r2": 0.996, "rmse": 0.009, "cv": "5-fold" },
+        "sigma": { "form": "constant", "value": 0.012 }
+      },
+      "reporting": {
+        "physical_expression": "(W_structure + 0.14*W0 + 1.1*P_SL**0.9 + 45.0) + 90.0 + 0.18*W0",
+        "limit": 0.0,
+        "units": "kg"
+      }
+    },
+    {
+      "id": "WTS.PWR_LOADING",
+      "description": "Installed power must meet the climb power loading floor from the reference mission.",
+      "requirement_ref": null,
+      "sense": "le_zero",
+      "normalization": { "kind": "absolute_scale", "scale": 1.5, "description": "g = (W0/P_SL - 9.0)/1.5, kg per kW." },
+      "criticality": "hard",
+      "surrogate": {
+        "form": "analytic",
+        "inputs": ["W0", "P_SL"],
+        "expression": "(W0/P_SL - 9.0) / 1.5",
+        "fit": { "n_train": 512, "r2": 1.0, "rmse": 0.0, "cv": "analytic" }
+      },
+      "reporting": { "physical_expression": "W0/P_SL", "limit": 9.0, "units": "kg/kW" }
+    }
+  ],
+
+  "objectives": [
+    {
+      "id": "WTS.EMPTY_FRACTION",
+      "direction": "minimize",
+      "units": "-",
+      "surrogate": {
+        "form": "analytic",
+        "inputs": ["W_structure", "W0", "P_SL"],
+        "expression": "(W_structure + 0.14*W0 + 1.1*P_SL**0.9 + 45.0) / W0"
+      }
+    }
+  ],
+
+  "evidence": {
+    "tool": { "name": "in-house group weights", "version": "0.6.1", "fidelity": "empirical" },
+    "method_ref": "Raymer 6th ed. Ch.15 GA statistical group weights, metricized and re-fit to 14 in-class UAVs.",
+    "n_evaluations": 512,
+    "doe": { "type": "lhs", "seed": 4471 },
+    "input_deck_refs": [],
+    "convergence_notes": "Closed form, no convergence issues.",
+    "known_limitations": "Statistical fits extrapolate badly below 400 kg. Structural mass is CONSUMED, not computed here — this publication is only as good as its W_structure conditioning. Coefficients are illustrative."
+  }
+}

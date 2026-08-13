@@ -1,0 +1,115 @@
+{
+  "$comment": "Canonical shared design space. EVERY region publication must reference this by id+version+hash. Two publications with different design_space_ref must never be intersected.",
+  "id": "uav-medium",
+  "version": 1,
+  "hash": "sha256:PLACEHOLDER_COMPUTED_BY_TOOLING",
+  "units_system": "SI",
+  "description": "Reference design space for a medium fixed-wing UAV, conceptual level.",
+
+  "design_variables": [
+    {
+      "name": "S_ref",
+      "symbol": "S",
+      "units": "m^2",
+      "type": "continuous",
+      "bounds": [8.0, 25.0],
+      "description": "Wing reference (trapezoidal) area."
+    },
+    {
+      "name": "AR",
+      "symbol": "AR",
+      "units": "-",
+      "type": "continuous",
+      "bounds": [8.0, 24.0],
+      "description": "Wing aspect ratio, b^2/S_ref."
+    },
+    {
+      "name": "t_c",
+      "symbol": "t/c",
+      "units": "-",
+      "type": "continuous",
+      "bounds": [0.08, 0.18],
+      "description": "Streamwise thickness-to-chord ratio at the wing structural station."
+    },
+    {
+      "name": "sweep_c4",
+      "symbol": "Λ_c/4",
+      "units": "deg",
+      "type": "continuous",
+      "bounds": [0.0, 15.0],
+      "description": "Quarter-chord sweep."
+    },
+    {
+      "name": "W0",
+      "symbol": "W0",
+      "units": "kg",
+      "type": "continuous",
+      "bounds": [400.0, 1200.0],
+      "description": "Design gross mass. Also the classic sizing fixed point: disciplines must close on it."
+    },
+    {
+      "name": "P_SL",
+      "symbol": "P",
+      "units": "kW",
+      "type": "continuous",
+      "bounds": [40.0, 160.0],
+      "description": "Installed sea-level shaft power."
+    }
+  ],
+
+  "coupling_variables": [
+    {
+      "name": "W_structure",
+      "units": "kg",
+      "supplier": "structures",
+      "consumers": ["weights"],
+      "seed": 165.0,
+      "description": "Primary structural mass (wing box, carrythrough, fuselage frames)."
+    },
+    {
+      "name": "W_empty",
+      "units": "kg",
+      "supplier": "weights",
+      "consumers": ["aerodynamics", "performance"],
+      "seed": 390.0,
+      "description": "Operating empty mass."
+    },
+    {
+      "name": "CL_max",
+      "units": "-",
+      "supplier": "aerodynamics",
+      "consumers": ["structures", "performance"],
+      "seed": 1.6,
+      "description": "Maximum usable trimmed lift coefficient, flaps up."
+    },
+    {
+      "name": "n_z_ult",
+      "units": "g",
+      "supplier": "requirements",
+      "consumers": ["structures", "weights"],
+      "seed": 5.7,
+      "description": "Ultimate load factor (3.8 limit x 1.5). Frozen by the requirement, not negotiated."
+    }
+  ],
+
+  "constants": {
+    "W_payload": { "value": 90.0, "units": "kg" },
+    "fuel_fraction": { "value": 0.18, "units": "-", "description": "Mission fuel as fraction of W0, from the reference mission." },
+    "rho_sl": { "value": 1.225, "units": "kg/m^3" },
+    "g": { "value": 9.80665, "units": "m/s^2" },
+    "V_cruise": { "value": 40.0, "units": "m/s" }
+  },
+
+  "mission_ref": {
+    "id": "ref-mission-A",
+    "hash": "sha256:PLACEHOLDER",
+    "summary": "90 kg payload, 8 h endurance at 40 m/s, 3000 m ISA, 800 m field length."
+  },
+
+  "requirements": [
+    { "id": "REQ-STALL", "statement": "V_stall <= 28 m/s at W0, sea level, flaps up." },
+    { "id": "REQ-LD", "statement": "Cruise L/D >= 12.0 at mid-mission mass, V_cruise, sea level." },
+    { "id": "REQ-CLOSE", "statement": "W_empty + W_payload + W_fuel <= W0." },
+    { "id": "REQ-DEFL", "statement": "Wing tip deflection <= 10% semispan at ultimate load." }
+  ]
+}

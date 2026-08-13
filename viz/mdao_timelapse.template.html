@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Decentralized MDAO — campaign timelapse</title>
+<style>
+  :root { color-scheme: dark; }
+  .viz-root {
+    color-scheme: light;
+    --page:#f4f1f8; --surface:#faf7fc; --surface-2:#f0ecf5;
+    --ink:#14111f; --ink-2:#4f4a5e; --muted:#847e93;
+    --grid:#e3dded; --baseline:#c6bfd4; --border:rgba(20,17,31,0.12);
+    --aero:#2a78d6; --struct:#d9451e; --wts:#0d9488;
+    --hot:#e08a00; --hot-core:#5c3200;
+    --republish:#c92a86; --hold:#847e93;
+    --region-a:0.10; --edge-w:1.6; --glow:0;
+  }
+  :root[data-theme="dark"] .viz-root, :root:not([data-theme]) .viz-root {
+    color-scheme: dark;
+    --page:#0b0910; --surface:#14111f; --surface-2:#1c1829;
+    --ink:#f4f1fa; --ink-2:#bdb6cc; --muted:#8b839c;
+    --grid:#282237; --baseline:#3a3350; --border:rgba(244,241,250,0.13);
+    --aero:#3d8ae8; --struct:#e8672e; --wts:#12a89a;
+    --hot:#fdc426; --hot-core:#ffe08a;
+    --republish:#ff4fb0; --hold:#8b839c;
+    --region-a:0.15; --edge-w:1.8; --glow:1;
+  }
+
+  *{box-sizing:border-box} body{margin:0}
+  .viz-root{min-height:100vh;background:var(--page);color:var(--ink);
+    font:14px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif;padding:18px 20px 30px}
+  header{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+  h1{font-size:19px;font-weight:650;margin:0;letter-spacing:-0.01em}
+  .sub{color:var(--ink-2);font-size:13px}
+  .spacer{flex:1}
+  button.ghost{background:var(--surface);color:var(--ink-2);border:1px solid var(--border);
+    border-radius:8px;padding:5px 11px;font:inherit;font-size:13px;cursor:pointer}
+  button.ghost:hover{color:var(--ink)}
+
+  .controls{display:flex;align-items:center;gap:12px;margin:10px 0 12px;background:var(--surface);
+    border:1px solid var(--border);border-radius:12px;padding:9px 14px}
+  .controls button.play{width:34px;height:34px;border-radius:50%;border:none;background:var(--hot);
+    color:#14111f;font-size:13px;cursor:pointer;display:grid;place-items:center;flex:none}
+  input[type=range]{flex:1;accent-color:var(--hot)}
+  .rlabel{font-variant-numeric:tabular-nums;color:var(--ink-2);min-width:150px;font-size:13px}
+  .speed button{padding:3px 9px;border-radius:7px;border:1px solid var(--border);background:none;
+    color:var(--muted);font:inherit;font-size:12px;cursor:pointer}
+  .speed button[aria-pressed="true"]{background:var(--hot);color:#14111f;border-color:var(--hot)}
+
+  .layout{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px;align-items:start}
+  @media (max-width:1060px){.layout{grid-template-columns:1fr}}
+
+  .stage{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:6px;position:relative}
+  canvas{display:block;width:100%;height:auto;border-radius:10px}
+  .tooltip{position:absolute;pointer-events:none;z-index:5;display:none;background:var(--surface-2);
+    border:1px solid var(--border);border-radius:10px;padding:8px 10px;font-size:12px;
+    box-shadow:0 8px 28px rgba(0,0,0,.45);min-width:215px}
+  .tooltip .tt-h{font-weight:650;margin-bottom:4px;font-variant-numeric:tabular-nums}
+  .tooltip table{border-collapse:collapse;width:100%}
+  .tooltip td{padding:1px 0;font-variant-numeric:tabular-nums}
+  .tooltip td:last-child{text-align:right}
+  .ok{color:var(--wts)} .bad{color:var(--republish)}
+
+  .legend{display:flex;flex-wrap:wrap;gap:7px 14px;font-size:12px;color:var(--ink-2);
+    margin-top:10px;padding:0 6px 4px}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .k{width:12px;height:12px;border-radius:3px;flex:none}
+  .kline{width:14px;height:0;border-top:2px solid;flex:none}
+  .k.hatch{background:repeating-linear-gradient(45deg,var(--muted) 0 2px,transparent 2px 5px);
+    border:1px solid var(--border)}
+
+  .panel{display:flex;flex-direction:column;gap:12px}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px}
+  .card h2{font-size:11px;font-weight:650;text-transform:uppercase;letter-spacing:.07em;
+    color:var(--muted);margin:0 0 8px}
+  .tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .tile{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px}
+  .tile .v{font-size:21px;font-weight:650;letter-spacing:-.01em}
+  .tile .l{font-size:11.5px;color:var(--ink-2);margin-top:1px}
+
+  .headline{font-size:13.5px;font-weight:600;line-height:1.35;margin-bottom:2px}
+  .evbox{border-left:3px solid var(--hot);background:color-mix(in srgb,var(--hot) 9%,transparent);
+    padding:8px 10px;border-radius:0 8px 8px 0;margin-top:8px}
+  .evbox .t{font-size:12.5px;font-weight:650;color:var(--hot)}
+  .evbox .d{font-size:12px;color:var(--ink-2);margin-top:3px}
+
+  .drow{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--grid);font-size:12.5px}
+  .drow:last-child{border-bottom:0}
+  .dot{width:9px;height:9px;border-radius:3px;flex:none}
+  .drow .nm{font-weight:600;flex:none;width:78px}
+  .drow .st{margin-left:auto;font-size:11px;font-weight:700;letter-spacing:.03em;
+    border-radius:6px;padding:2px 7px;flex:none}
+  .st.closed{background:color-mix(in srgb,var(--hold) 20%,transparent);color:var(--ink-2)}
+  .st.republish{background:color-mix(in srgb,var(--republish) 18%,transparent);color:var(--republish)}
+  .drow .why{color:var(--muted);font-size:11.5px;font-variant-numeric:tabular-nums}
+
+  .log{max-height:210px;overflow-y:auto;display:flex;flex-direction:column;gap:7px}
+  .jrow{display:flex;gap:8px;font-size:12.5px;line-height:1.35}
+  .jrow .rn{color:var(--muted);font-variant-numeric:tabular-nums;flex:none;width:22px;font-weight:600}
+  .jrow .tx{color:var(--ink-2)}
+  .jrow.ev .tx{color:var(--hot)}
+  .jrow.cur{background:color-mix(in srgb,var(--hot) 10%,transparent);border-radius:6px;
+    margin:0 -6px;padding:3px 6px}
+  .jrow.cur .tx{color:var(--ink)}
+
+  details.tbl{margin-top:14px}
+  details.tbl summary{cursor:pointer;color:var(--ink-2);font-size:13px}
+  table.data{border-collapse:collapse;margin-top:10px;width:100%;font-size:12.5px}
+  table.data th,table.data td{text-align:right;padding:5px 9px;border-bottom:1px solid var(--grid);
+    font-variant-numeric:tabular-nums}
+  table.data th{color:var(--muted);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.05em}
+  table.data td:first-child,table.data th:first-child{text-align:left}
+</style>
+</head>
+<body>
+<div class="viz-root" id="root">
+  <header>
+    <h1>Decentralized MDAO — a 12-round design campaign</h1>
+    <div class="sub">6-D UAV space · 3 discipline agents · damped fixed point · 3 tool re-runs</div>
+    <div class="spacer"></div>
+    <button class="ghost" id="themeBtn">Light mode</button>
+  </header>
+
+  <div class="controls">
+    <button class="play" id="playBtn" aria-label="Play/pause">▶</button>
+    <span class="rlabel" id="roundLabel">round 0 · publish</span>
+    <input type="range" id="scrub" min="0" max="11999" value="0" step="1" aria-label="Timeline">
+    <span class="speed">
+      <button data-s="0.5">0.5×</button><button data-s="1" aria-pressed="true">1×</button><button data-s="2">2×</button>
+    </span>
+  </div>
+
+  <div class="layout">
+    <div>
+      <div class="stage">
+        <canvas id="cv" width="960" height="700"></canvas>
+        <div class="tooltip" id="tt"></div>
+        <div class="legend">
+          <span><i class="kline" style="border-color:var(--aero)"></i>aerodynamics boundary</span>
+          <span><i class="kline" style="border-color:var(--struct)"></i>structures boundary</span>
+          <span><i class="kline" style="border-color:var(--wts)"></i>weights boundary</span>
+          <span><i class="k hatch"></i>overlap on inconsistent premises</span>
+          <span><i class="k" style="background:var(--hot)"></i>admissible region</span>
+          <span><i class="k" style="background:none;border:1.5px dashed var(--ink)"></i>trust region — where the next round samples</span>
+          <span><i class="k" style="background:var(--hot);opacity:.4;border-radius:50%"></i>archive (found in earlier rounds)</span>
+          <span><svg width="15" height="13" viewBox="-8 -6 16 13"><path d="M-1,-4 L-1,5 L1,5 L1,-4 Z M-7,-1 L-1,-2 L1,-2 L7,-1 L7,1 L1,0 L-1,0 L-7,1 Z M-2.5,3 L2.5,3 L2.5,4.5 L-2.5,4.5 Z" fill="var(--hot-core)"/></svg>admissible design, planform to scale</span>
+        </div>
+      </div>
+
+      <div class="stage" style="margin-top:14px;padding:12px 14px 6px">
+        <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:2px">
+          <div style="font-size:12px;font-weight:650;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)">
+            Campaign trace — is the search learning?</div>
+          <div class="sub" style="font-size:11.5px;display:flex;gap:12px;align-items:center">
+            <span style="display:inline-flex;align-items:center;gap:5px"><i style="width:14px;border-top:2.5px solid var(--hot)"></i>yield — admissible share of points sampled</span>
+            <span style="display:inline-flex;align-items:center;gap:5px"><i style="width:14px;border-top:1.5px dashed var(--muted)"></i>volume — admissible share of the whole box</span>
+            <span>◆ tool re-run</span>
+          </div>
+        </div>
+        <canvas id="tl" width="960" height="150"></canvas>
+      </div>
+
+      <div class="stage" style="margin-top:14px;padding:12px 14px 8px">
+        <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:4px;flex-wrap:wrap">
+          <div style="font-size:12px;font-weight:650;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)">
+            The full 6-D region — every pairwise slice through the corner design</div>
+          <div class="sub" style="font-size:11.5px">the AR × W₀ map above is just one of these 15 cuts ·
+            gold = admissible · hatch-gray = overlap on stale premises · diagonal shows each variable's trust-region squeeze</div>
+        </div>
+        <canvas id="pg" width="960" height="856"></canvas>
+      </div>
+
+      <details class="tbl">
+        <summary>Table view — per-round numbers (full 6-D check, 40k samples/round)</summary>
+        <table class="data" id="dataTable"></table>
+      </details>
+    </div>
+
+    <div class="panel">
+      <div class="tiles">
+        <div class="tile"><div class="v" id="tYield" style="color:var(--hot)">–</div><div class="l">yield of sampled</div></div>
+        <div class="tile"><div class="v" id="tArch">–</div><div class="l">archive size</div></div>
+        <div class="tile"><div class="v" id="tTR">–</div><div class="l">trust region</div></div>
+      </div>
+
+      <div class="card">
+        <h2>Round log</h2>
+        <div class="headline" id="headline">–</div>
+        <div id="evSlot"></div>
+        <div id="discRows" style="margin-top:8px"></div>
+      </div>
+
+      <div class="card">
+        <h2>Coupling state (assumed by consumers)</h2>
+        <div id="cvState"></div>
+      </div>
+
+      <div class="card">
+        <h2>Campaign journal</h2>
+        <div class="log" id="journal"></div>
+      </div>
+
+      <div class="card">
+        <h2>How to read this</h2>
+        <div class="sub" style="font-size:12.5px">
+          Each agent publishes a <b>region</b> — constraint margins over the shared design vector,
+          conditioned on assumed coupling values. Colored contours are each discipline's feasibility
+          boundary on a 2-D slice (AR × W₀) taken <b>through the corner design</b> — so the ringed
+          aircraft always sits inside the region it annotates. Hatching marks overlap built on
+          <b>stale assumptions</b>; the glowing region survives both the margin check and the
+          fixed-point check. Dots are full 6-D samples classed on their own values, so a dot can
+          still disagree with the slice beneath it — it has its own S, t/c, sweep and power.
+          Admissible designs earn a <b>planform</b>, drawn to scale from their own variables.
+          Rounds now <b>learn</b>: the dashed box is the trust region the next round samples,
+          faint gold dots are the archive carried in from earlier rounds, and the trace below
+          separates <b>yield</b> (how good the search is) from <b>volume</b> (how big the answer
+          is). Yield climbing while volume stays flat is the search getting smarter — not the
+          design space improving.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const DATA = __DATA__;
+const RD = DATA.rounds, NR = RD.length;
+
+/* ---------- theme ---------- */
+const rootEl = document.documentElement;
+const themeBtn = document.getElementById('themeBtn');
+themeBtn.onclick = () => {
+  const dark = (rootEl.getAttribute('data-theme') || 'dark') === 'dark';
+  rootEl.setAttribute('data-theme', dark ? 'light' : 'dark');
+  themeBtn.textContent = dark ? 'Dark mode' : 'Light mode';
+  themeDirty = true;
+};
+
+let C = {}, themeDirty = true;
+function hexToRgb(h){h=h.trim();if(h.startsWith('rgb')){const m=h.match(/[\d.]+/g);return[+m[0],+m[1],+m[2]];}
+  h=h.replace('#','');if(h.length===3)h=h.split('').map(c=>c+c).join('');
+  return[parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)];}
+function readTheme(){
+  const cs=getComputedStyle(document.getElementById('root')), g=n=>cs.getPropertyValue(n).trim();
+  C={surface:hexToRgb(g('--surface')),surfaceS:g('--surface'),surface2:g('--surface-2'),
+     ink:g('--ink'),ink2:g('--ink-2'),muted:g('--muted'),mutedRgb:hexToRgb(g('--muted')),
+     grid:g('--grid'),baseline:g('--baseline'),
+     aero:hexToRgb(g('--aero')),struct:hexToRgb(g('--struct')),wts:hexToRgb(g('--wts')),
+     aeroS:g('--aero'),structS:g('--struct'),wtsS:g('--wts'),
+     hot:hexToRgb(g('--hot')),hotS:g('--hot'),hotCoreS:g('--hot-core'),
+     repS:g('--republish'),holdS:g('--hold'),
+     regionA:parseFloat(g('--region-a')),edgeW:parseFloat(g('--edge-w')),glow:parseFloat(g('--glow'))};
+  themeDirty=false; fieldKey='';
+}
+
+/* ---------- physics ---------- */
+const NZ=5.7,G0=9.80665,RHO=1.225,VC2=1600;
+function evalPoint(AR,W0,S,tc,sw,P,A,K){
+  const CLmax=1.35+2.2*tc-0.012*sw;
+  const gStall=(Math.sqrt(2*W0*G0/(RHO*S*CLmax))-28)/28;
+  const Wmid=A.We+90+0.09*W0;
+  const CL=2*Wmid*G0/(RHO*VC2*S);
+  const CD0=K.cd0+0.05*(tc-0.12)+0.15/S;
+  const e=1.78*(1-0.045*Math.pow(AR,0.68))-0.64;
+  const LD=CL/(CD0+CL*CL/(Math.PI*e*AR));
+  const gLD=(12-LD)/12;
+  const gTip=(K.tip*NZ*W0*Math.pow(AR,2.5)/(Math.sqrt(S)*tc*tc)-0.10)/0.10;
+  const gSpar=(0.055-tc*Math.sqrt(S/AR)*1.35)/0.02;
+  const WeSup=A.Wstr+0.14*W0+1.1*Math.pow(P,0.9)+45;
+  const gClose=(WeSup+90+0.18*W0-W0)/W0;
+  const gPwr=(W0/P-9)/1.5;
+  const WstrSup=K.wstr*Math.pow(NZ*W0,0.55)*Math.pow(S,0.55)*Math.sqrt(AR)*
+                Math.pow(tc,-0.35)/Math.sqrt(Math.cos(sw*Math.PI/180));
+  return{gStall,gLD,gTip,gSpar,gClose,gPwr,
+    fA:gStall<=0&&gLD<=0, fS:gTip<=0&&gSpar<=0, fW:gClose<=0&&gPwr<=0,
+    rWe:Math.abs(WeSup-A.We)/A.We/0.05, rWstr:Math.abs(WstrSup-A.Wstr)/A.Wstr/0.08,
+    rCL:Math.abs(CLmax-A.CL)/A.CL/0.10, WeSup,WstrSup,CLmax,LD};
+}
+/* surrogate coefficients as the campaign events rewrite them */
+function kernelAt(r){
+  return { tip: r>=3 ? 1.42e-9 : 1.0e-9,
+           wstr: r>=6 ? 0.0338 : 0.045,
+           cd0:  r>=9 ? 0.0125 : 0.014 };
+}
+
+/* ---------- planform ---------- */
+const TAPER=0.45;
+function planformGeom(AR,W0,S,sw){
+  const b=Math.sqrt(AR*S), cr=2*S/(b*(1+TAPER)), ct=TAPER*cr;
+  const tn=Math.tan(sw*Math.PI/180), yt=b/2;
+  const wing=[[-0.25*cr,0],[yt*tn-0.25*ct,yt],[yt*tn+0.75*ct,yt],[0.75*cr,0]];
+  const L=6.4*Math.cbrt(W0/600), wf=L/9, xle=-0.42*L, xte=0.58*L;
+  const bt=0.30*b, crt=0.55*ct+0.35, ctt=0.6*crt, tt=Math.tan(14*Math.PI/180), ytt=bt/2;
+  const xtail=xte-crt*1.05;
+  const tail=[[xtail,0],[xtail+ytt*tt,ytt],[xtail+ytt*tt+ctt,ytt],[xtail+crt,0]];
+  return{b,cr,L,wf,xle,xte,wing,tail};
+}
+function tracePlanform(c,px,py,s,g){
+  const P=(x,y)=>[px+y*s,py+x*s];
+  c.beginPath();
+  c.moveTo(...P(g.xle+0.06*g.L,-g.wf/2));
+  c.quadraticCurveTo(...P(g.xle,-g.wf/2),...P(g.xle,0));
+  c.quadraticCurveTo(...P(g.xle,g.wf/2),...P(g.xle+0.06*g.L,g.wf/2));
+  c.lineTo(...P(g.xte-0.04*g.L,g.wf/3));
+  c.quadraticCurveTo(...P(g.xte,g.wf/3),...P(g.xte,0));
+  c.quadraticCurveTo(...P(g.xte,-g.wf/3),...P(g.xte-0.04*g.L,-g.wf/3));
+  c.closePath();
+  for(const poly of [g.wing,g.tail]){
+    c.moveTo(...P(poly[0][0],poly[0][1]));
+    for(let i=1;i<poly.length;i++)c.lineTo(...P(poly[i][0],poly[i][1]));
+    for(let i=poly.length-1;i>=0;i--)c.lineTo(...P(poly[i][0],-poly[i][1]));
+    c.closePath();
+  }
+}
+function planformSvgPath(g,s){
+  const P=(x,y)=>`${(y*s).toFixed(1)},${(x*s).toFixed(1)}`;
+  let d=`M${P(g.xle+0.06*g.L,-g.wf/2)} Q${P(g.xle,-g.wf/2)} ${P(g.xle,0)} Q${P(g.xle,g.wf/2)} ${P(g.xle+0.06*g.L,g.wf/2)} L${P(g.xte-0.04*g.L,g.wf/3)} Q${P(g.xte,g.wf/3)} ${P(g.xte,0)} Q${P(g.xte,-g.wf/3)} ${P(g.xte-0.04*g.L,-g.wf/3)} Z `;
+  for(const poly of [g.wing,g.tail]){
+    d+='M'+P(poly[0][0],poly[0][1]);
+    for(let i=1;i<poly.length;i++)d+=' L'+P(poly[i][0],poly[i][1]);
+    for(let i=poly.length-1;i>=0;i--)d+=' L'+P(poly[i][0],-poly[i][1]);
+    d+=' Z ';
+  }
+  return d;
+}
+
+/* ---------- timeline state ---------- */
+const ROUND_S=5.0;
+let playing=false,speed=1,rp=0,lastT=0;
+const PH={pubStart:.04,pubEnd:.42,dotStart:.30,dotEnd:.68,verdict:.72,msgStart:.80,msgEnd:.98,lerpStart:.85};
+const lerp=(a,b,t)=>a+(b-a)*t;
+const smooth=t=>t<=0?0:t>=1?1:t*t*(3-2*t);
+const easeOut=t=>1-Math.pow(1-Math.min(Math.max(t,0),1),3);
+
+function stateAt(v){
+  const r=Math.min(Math.floor(v),NR-1), p=Math.min(v-r,.9999);
+  const cur=RD[r], nxt=RD[Math.min(r+1,NR-1)];
+  const t=smooth((p-PH.lerpStart)/(1-PH.lerpStart));
+  const A={We:lerp(cur.assumed.W_empty,nxt.assumed.W_empty,t),
+           Wstr:lerp(cur.assumed.W_structure,nxt.assumed.W_structure,t),
+           CL:lerp(cur.assumed.CL_max,nxt.assumed.CL_max,t)};
+  const sl={};
+  for(const k of ['S_ref','t_c','sweep_c4','P_SL']) sl[k]=lerp(cur.slice[k],nxt.slice[k],t);
+  return{r,p,cur,nxt,A,sl,K:kernelAt(r)};
+}
+
+/* ---------- canvas ---------- */
+const cvEl=document.getElementById('cv'), ctx=cvEl.getContext('2d');
+const DPR=Math.min(devicePixelRatio||1,2), CW=960, CH=700;
+cvEl.width=CW*DPR; cvEl.height=CH*DPR;
+const MAP={x:272,y:100,w:466,h:466};
+const AXX=DATA.box.AR, AXY=DATA.box.W0;
+const mx=a=>MAP.x+(a-AXX[0])/(AXX[1]-AXX[0])*MAP.w;
+const my=w=>MAP.y+MAP.h-(w-AXY[0])/(AXY[1]-AXY[0])*MAP.h;
+
+const NODES={
+  aerodynamics:{x:120,y:176,label:'Aerodynamics',tool:'AVL + XFOIL',ck:'aero'},
+  structures:{x:120,y:498,label:'Structures',tool:'ASWING 5.99',ck:'struct'},
+  weights:{x:874,y:498,label:'Weights',tool:'Raymer gw 0.6',ck:'wts'},
+  orchestrator:{x:436,y:44,label:'Orchestrator',tool:'intersect + fixpoint',ck:null,side:'right'},
+  witness:{x:874,y:176,label:'Witness',tool:'deterministic checks',ck:null},
+};
+
+/* field raster with crisp boundary contours */
+const FW=156,FH=156;
+const fieldCv=document.createElement('canvas'); fieldCv.width=FW; fieldCv.height=FH;
+const fieldCtx=fieldCv.getContext('2d');
+let fieldKey='';
+function renderField(A,sl,K){
+  const key=[A.We,A.Wstr,A.CL,sl.S_ref,sl.t_c,sl.sweep_c4,sl.P_SL,K.tip,K.wstr,K.cd0]
+    .map(v=>v.toPrecision(6)).join(',');
+  if(key===fieldKey)return; fieldKey=key;
+  const fa=new Uint8Array(FW*FH),fs=new Uint8Array(FW*FH),fw=new Uint8Array(FW*FH),
+        ad=new Uint8Array(FW*FH),hz=new Uint8Array(FW*FH);
+  for(let j=0;j<FH;j++){
+    const W0=AXY[1]-(j+.5)/FH*(AXY[1]-AXY[0]);
+    for(let i=0;i<FW;i++){
+      const AR=AXX[0]+(i+.5)/FW*(AXX[1]-AXX[0]);
+      const q=evalPoint(AR,W0,sl.S_ref,sl.t_c,sl.sweep_c4,sl.P_SL,A,K);
+      const o=j*FW+i;
+      fa[o]=q.fA?1:0; fs[o]=q.fS?1:0; fw[o]=q.fW?1:0;
+      if(q.fA&&q.fS&&q.fW){ if(q.rWe<=1&&q.rWstr<=1&&q.rCL<=1) ad[o]=1; else hz[o]=1; }
+    }
+  }
+  const img=fieldCtx.createImageData(FW,FH), d=img.data;
+  const [sr,sg,sb]=C.surface, ra=C.regionA;
+  const isEdge=(m,i,j)=>{const o=j*FW+i; if(!m[o])return false;
+    return (i+1<FW&&!m[o+1])||(i>0&&!m[o-1])||(j+1<FH&&!m[o+FW])||(j>0&&!m[o-FW]);};
+  for(let j=0;j<FH;j++)for(let i=0;i<FW;i++){
+    const o=j*FW+i; let r=sr,g=sg,b=sb;
+    if(fa[o]){r=lerp(r,C.aero[0],ra);g=lerp(g,C.aero[1],ra);b=lerp(b,C.aero[2],ra);}
+    if(fs[o]){r=lerp(r,C.struct[0],ra);g=lerp(g,C.struct[1],ra);b=lerp(b,C.struct[2],ra);}
+    if(fw[o]){r=lerp(r,C.wts[0],ra);g=lerp(g,C.wts[1],ra);b=lerp(b,C.wts[2],ra);}
+    if(hz[o]&&(i+j)%7<2){r=lerp(r,C.mutedRgb[0],.5);g=lerp(g,C.mutedRgb[1],.5);b=lerp(b,C.mutedRgb[2],.5);}
+    if(ad[o]){r=lerp(sr,C.hot[0],.55);g=lerp(sg,C.hot[1],.55);b=lerp(sb,C.hot[2],.55);}
+    // crisp contours last so they sit on top
+    if(isEdge(fa,i,j)){r=C.aero[0];g=C.aero[1];b=C.aero[2];}
+    if(isEdge(fs,i,j)){r=C.struct[0];g=C.struct[1];b=C.struct[2];}
+    if(isEdge(fw,i,j)){r=C.wts[0];g=C.wts[1];b=C.wts[2];}
+    if(isEdge(ad,i,j)){r=C.hot[0];g=C.hot[1];b=C.hot[2];}
+    const k=o*4; d[k]=r;d[k+1]=g;d[k+2]=b;d[k+3]=255;
+  }
+  fieldCtx.putImageData(img,0,0);
+}
+
+function roundRect(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);
+  ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+function edgePoint(n){
+  const cx=MAP.x+MAP.w/2, cy=MAP.y+MAP.h/2, dx=cx-n.x, dy=cy-n.y;
+  const tx=dx>0?(MAP.x-n.x)/dx:(MAP.x+MAP.w-n.x)/dx;
+  const ty=dy>0?(MAP.y-n.y)/dy:(MAP.y+MAP.h-n.y)/dy;
+  const tt=Math.min(Math.max(Math.max(tx,ty),.15),.95);
+  return{x:n.x+dx*tt,y:n.y+dy*tt};
+}
+function drawNode(n,active,time,flash){
+  const col=n.ck?getComputedStyle(document.getElementById('root')).getPropertyValue('--'+n.ck).trim():C.muted;
+  const pulse=active?1+.06*Math.sin(time*6):1, R=(n.ck?26:22)*pulse;
+  ctx.save();
+  if(active&&C.glow){ctx.shadowColor=col;ctx.shadowBlur=20;}
+  ctx.beginPath();ctx.arc(n.x,n.y,R,0,7);
+  ctx.fillStyle=C.surfaceS;ctx.fill();
+  ctx.lineWidth=n.ck?2.5:1.5;ctx.strokeStyle=flash?C.hotS:col;ctx.stroke();
+  ctx.restore();
+  if(flash){ // this discipline re-ran its tools this round
+    ctx.save();ctx.globalAlpha=.55+.45*Math.sin(time*5);
+    ctx.beginPath();ctx.arc(n.x,n.y,R+7,0,7);
+    ctx.strokeStyle=C.hotS;ctx.lineWidth=1.5;ctx.stroke();ctx.restore();
+  }
+  if(n.ck)['a','b'].forEach((s,k)=>{
+    const a=time*.9+k*Math.PI+(n.x<480?0:1.3);
+    ctx.beginPath();ctx.arc(n.x+Math.cos(a)*(R+11),n.y+Math.sin(a)*(R+11),4,0,7);
+    ctx.fillStyle=col;ctx.globalAlpha=.75;ctx.fill();ctx.globalAlpha=1;
+  });
+  if(n.side==='right'){
+    ctx.textAlign='left';
+    ctx.fillStyle=C.ink;ctx.font='600 13px system-ui,sans-serif';ctx.fillText(n.label,n.x+R+10,n.y-1);
+    ctx.fillStyle=C.muted;ctx.font='11px system-ui,sans-serif';ctx.fillText(n.tool,n.x+R+10,n.y+13);
+  }else{
+    ctx.textAlign='center';
+    ctx.fillStyle=C.ink;ctx.font='600 13px system-ui,sans-serif';ctx.fillText(n.label,n.x,n.y+R+16);
+    ctx.fillStyle=C.muted;ctx.font='11px system-ui,sans-serif';ctx.fillText(n.tool,n.x,n.y+R+30);
+    if(n.ck)ctx.fillText('coder · reviewer',n.x,n.y+R+43);
+  }
+}
+function drawPulse(f,t,tt,color,r=5){
+  if(tt<0||tt>1)return;
+  const x=lerp(f.x,t.x,easeOut(tt)),y=lerp(f.y,t.y,easeOut(tt));
+  ctx.save();ctx.globalAlpha=tt<.1?tt*10:tt>.9?(1-tt)*10:1;
+  if(C.glow){ctx.shadowColor=color;ctx.shadowBlur=14;}
+  ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.fillStyle=color;ctx.fill();ctx.restore();
+}
+
+/* ---------- main draw ---------- */
+function draw(time){
+  const st=stateAt(rp), {r,p,cur,A,sl,K}=st;
+  if(themeDirty)readTheme();
+  renderField(A,sl,K);
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  ctx.clearRect(0,0,CW,CH);
+
+  ctx.strokeStyle=C.grid;ctx.lineWidth=1;
+  for(const k in NODES){const n=NODES[k],e=edgePoint(n);
+    ctx.beginPath();ctx.moveTo(n.x,n.y);ctx.lineTo(e.x,e.y);ctx.stroke();}
+
+  ctx.save();roundRect(MAP.x,MAP.y,MAP.w,MAP.h,8);ctx.clip();
+  const reveal=r===0?smooth((p-PH.pubStart)/(PH.pubEnd-PH.pubStart)):1;
+  ctx.globalAlpha=Math.max(reveal,.02);
+  ctx.drawImage(fieldCv,MAP.x,MAP.y,MAP.w,MAP.h);
+  ctx.globalAlpha=1;ctx.restore();
+  roundRect(MAP.x,MAP.y,MAP.w,MAP.h,8);ctx.strokeStyle=C.baseline;ctx.lineWidth=1;ctx.stroke();
+
+  ctx.font='11px system-ui,sans-serif';ctx.fillStyle=C.muted;ctx.strokeStyle=C.grid;ctx.lineWidth=.75;
+  for(let a=Math.ceil(AXX[0]/2)*2;a<=AXX[1];a+=2){const x=mx(a);
+    ctx.globalAlpha=.45;ctx.beginPath();ctx.moveTo(x,MAP.y);ctx.lineTo(x,MAP.y+MAP.h);ctx.stroke();ctx.globalAlpha=1;
+    ctx.textAlign='center';ctx.fillText(a,x,MAP.y+MAP.h+16);}
+  for(let w=Math.ceil(AXY[0]/100)*100;w<=AXY[1];w+=100){const y=my(w);
+    ctx.globalAlpha=.45;ctx.beginPath();ctx.moveTo(MAP.x,y);ctx.lineTo(MAP.x+MAP.w,y);ctx.stroke();ctx.globalAlpha=1;
+    ctx.textAlign='right';ctx.fillText(w,MAP.x-7,y+4);}
+  ctx.textAlign='center';ctx.fillStyle=C.ink2;ctx.font='600 12px system-ui,sans-serif';
+  ctx.fillText('aspect ratio  AR',MAP.x+MAP.w/2,MAP.y+MAP.h+34);
+  ctx.save();ctx.translate(MAP.x-46,MAP.y+MAP.h/2);ctx.rotate(-Math.PI/2);
+  ctx.fillText('gross mass  W₀  (kg)',0,0);ctx.restore();
+  ctx.fillStyle=C.muted;ctx.font='11px system-ui,sans-serif';
+  ctx.fillText(`slice through the corner design @ S=${sl.S_ref.toFixed(1)} m² · t/c=${sl.t_c.toFixed(3)} · Λ=${sl.sweep_c4.toFixed(1)}° · P=${sl.P_SL.toFixed(0)} kW`,
+    MAP.x+MAP.w/2,MAP.y-10);
+
+  const nD=Math.floor(cur.points.length*smooth((p-PH.dotStart)/(PH.dotEnd-PH.dotStart)));
+  ctx.save();roundRect(MAP.x,MAP.y,MAP.w,MAP.h,8);ctx.clip();
+
+  /* archive carried in from earlier rounds -- the search's memory */
+  if(cur.archive_pts.length&&p>PH.pubStart){
+    ctx.globalAlpha=.38*Math.min((p-PH.pubStart)*6,1);
+    ctx.fillStyle=C.hotS;
+    for(const a of cur.archive_pts){
+      ctx.beginPath();ctx.arc(mx(a[1]),my(a[4]),2.1,0,7);ctx.fill();
+    }
+    ctx.globalAlpha=1;
+  }
+
+  /* trust region: the box the next round will sample */
+  if(cur.stats.tr_frac<99.5){
+    const t=cur.tr, cl=(v,a,b)=>Math.min(Math.max(v,a),b);
+    // inset by 2px so edges that coincide with the domain border stay visible
+    const x0=cl(mx(t.AR[0]),MAP.x+2,MAP.x+MAP.w-2), x1=cl(mx(t.AR[1]),MAP.x+2,MAP.x+MAP.w-2);
+    const y0=cl(my(t.W0[1]),MAP.y+2,MAP.y+MAP.h-2), y1=cl(my(t.W0[0]),MAP.y+2,MAP.y+MAP.h-2);
+    ctx.save();ctx.setLineDash([5,4]);ctx.lineWidth=1.5;ctx.strokeStyle=C.ink;
+    ctx.globalAlpha=.6;ctx.strokeRect(x0,y0,x1-x0,y1-y0);
+    ctx.setLineDash([]);ctx.globalAlpha=1;
+    const lbl=`trust region · ${cur.stats.tr_frac.toFixed(1)}% of box`;
+    ctx.font='600 10px system-ui,sans-serif';ctx.textAlign='left';
+    const lw=ctx.measureText(lbl).width+10;
+    roundRect(x0+4,y0+4,lw,15,4);ctx.fillStyle=C.surfaceS;ctx.globalAlpha=.85;ctx.fill();
+    ctx.globalAlpha=1;ctx.fillStyle=C.ink;ctx.fillText(lbl,x0+9,y0+15);
+    ctx.restore();
+  }
+  for(let i=0;i<nD;i++){
+    const [S,ar,tc,sw,w0,P,cls]=cur.points[i], x=mx(ar), y=my(w0);
+    if(x<MAP.x+2||x>MAP.x+MAP.w-2||y<MAP.y+2||y>MAP.y+MAP.h-2)continue;
+    const pop=i===nD-1?1.8:1;
+    if(cls===2){
+      const g=planformGeom(ar,w0,S,sw);
+      ctx.save(); if(C.glow){ctx.shadowColor=C.hotS;ctx.shadowBlur=9;}
+      tracePlanform(ctx,x,y,1.35*pop,g);
+      ctx.fillStyle=C.hotCoreS;ctx.fill();
+      ctx.lineWidth=1.2;ctx.strokeStyle=C.surfaceS;ctx.stroke();ctx.restore();
+    }else{
+      ctx.beginPath();ctx.arc(x,y,(cls===1?2.2:1.4)*pop,0,7);
+      ctx.fillStyle=C.muted;ctx.globalAlpha=cls===1?.6:.26;ctx.fill();ctx.globalAlpha=1;
+    }
+  }
+  ctx.restore();
+
+  if(cur.corner&&p>PH.verdict){
+    const co=cur.corner, cx=mx(co.AR), cy=my(co.W0), gl=1+.25*Math.sin(time*4);
+    // the corner IS an admissible design -- draw its planform, then ring it
+    const cg=planformGeom(co.AR,co.W0,co.S_ref,co.sweep_c4);
+    ctx.save(); if(C.glow){ctx.shadowColor=C.hotS;ctx.shadowBlur=11;}
+    tracePlanform(ctx,cx,cy,1.6,cg);
+    ctx.fillStyle=C.hotCoreS;ctx.fill();
+    ctx.lineWidth=1.2;ctx.strokeStyle=C.surfaceS;ctx.stroke();ctx.restore();
+    ctx.beginPath();ctx.arc(cx,cy,13,0,7);ctx.lineWidth=2;ctx.strokeStyle=C.ink;ctx.stroke();
+    ctx.beginPath();ctx.arc(cx,cy,17*gl,0,7);ctx.globalAlpha=.4;ctx.stroke();ctx.globalAlpha=1;
+    const t=`corner · ${co.active.length} active`;
+    ctx.fillStyle=C.ink;ctx.font='600 11px system-ui,sans-serif';
+    if(cx>MAP.x+MAP.w-130){ctx.textAlign='right';ctx.fillText(t,cx-21,cy+4);}
+    else{ctx.textAlign='left';ctx.fillText(t,cx+21,cy+4);}
+
+    const IN={x:790,y:246,w:150,h:190};
+    roundRect(IN.x,IN.y,IN.w,IN.h,10);ctx.fillStyle=C.surface2;ctx.fill();
+    ctx.strokeStyle=C.baseline;ctx.lineWidth=1;ctx.stroke();
+    ctx.fillStyle=C.muted;ctx.font='600 10px system-ui,sans-serif';ctx.textAlign='center';
+    ctx.fillText('CORNER DESIGN',IN.x+IN.w/2,IN.y+16);
+    const gg=planformGeom(co.AR,co.W0,co.S_ref,co.sweep_c4);
+    ctx.save(); if(C.glow){ctx.shadowColor=C.hotS;ctx.shadowBlur=12;}
+    tracePlanform(ctx,IN.x+IN.w/2,IN.y+80,(IN.w-26)/gg.b,gg);
+    ctx.fillStyle=C.hotCoreS;ctx.fill();ctx.lineWidth=1.2;ctx.strokeStyle=C.surface2;ctx.stroke();ctx.restore();
+    ctx.fillStyle=C.ink2;ctx.font='10.5px system-ui,sans-serif';
+    ctx.fillText(`b ${gg.b.toFixed(1)} m · AR ${co.AR.toFixed(1)}`,IN.x+IN.w/2,IN.y+142);
+    ctx.fillText(`W₀ ${co.W0.toFixed(0)} kg · S ${co.S_ref.toFixed(1)} m²`,IN.x+IN.w/2,IN.y+157);
+    ctx.fillText(`t/c ${co.t_c.toFixed(3)} · Λ ${co.sweep_c4.toFixed(1)}°`,IN.x+IN.w/2,IN.y+172);
+  }
+
+  const evD=cur.event?cur.event.discipline:null;
+  drawNode(NODES.aerodynamics,p<.22,time,evD==='aerodynamics'&&p<.5);
+  drawNode(NODES.structures,p<.22,time,evD==='structures'&&p<.5);
+  drawNode(NODES.weights,p<.22,time,evD==='weights'&&p<.5);
+  drawNode(NODES.orchestrator,p>PH.verdict&&p<PH.msgEnd,time,false);
+  drawNode(NODES.witness,p>.6&&p<PH.verdict+.06,time,false);
+
+  ['aerodynamics','structures','weights'].forEach((k,i)=>{
+    const n=NODES[k],e=edgePoint(n),t0=PH.pubStart+i*.06,dur=.22;
+    drawPulse(n,e,(p-t0)/dur,k==='aerodynamics'?C.aeroS:k==='structures'?C.structS:C.wtsS);
+  });
+  drawPulse(edgePoint(NODES.witness),NODES.witness,(p-.60)/.12,C.muted,4);
+
+  cur.messages.forEach((m,i)=>{
+    const n=NODES[m.to],t0=PH.msgStart+i*.04,dur=.13;
+    const col=m.verdict==='REPUBLISH'?C.repS:C.holdS;
+    drawPulse(NODES.orchestrator,n,(p-t0)/dur,col,5.5);
+    if(p>t0+dur&&p<PH.msgEnd+.02){
+      const txt=`${m.verdict==='REPUBLISH'?'⟳':'✓'} ${m.cv} → ${m.target}`;
+      ctx.font='600 10.5px system-ui,sans-serif';
+      const w=ctx.measureText(txt).width+14, bx=n.x-w/2, by=n.y-70;
+      ctx.save();ctx.globalAlpha=Math.min((p-t0-dur)*8,1);
+      roundRect(bx,by,w,20,6);ctx.fillStyle=C.surface2;ctx.fill();
+      ctx.strokeStyle=col;ctx.lineWidth=1.25;ctx.stroke();
+      ctx.fillStyle=col;ctx.textAlign='center';ctx.fillText(txt,n.x,by+14);ctx.restore();
+    }
+  });
+
+  ctx.textAlign='left';ctx.fillStyle=C.muted;ctx.font='11px system-ui,sans-serif';
+  const phase=p<PH.pubEnd?'agents publish regions':p<PH.dotEnd?'sampling the common domain':
+              p<PH.msgStart?'witness: margins ∧ fixed-point':'orchestrator broadcasts targets';
+  ctx.fillText(`round ${r}  ·  ${phase}`,16,CH-14);
+
+  drawTimeline(st);
+  drawGrid(st);
+  updateDom(st);
+}
+
+/* ---------- pairwise slice matrix: the 6-D region, every 2-D cut ---------- */
+const PGV=['AR','W0','S_ref','P_SL','t_c','sweep_c4'];
+const PGL={AR:'AR',W0:'W₀ kg',S_ref:'S m²',P_SL:'P kW',t_c:'t/c',sweep_c4:'Λ°'};
+const pgEl=document.getElementById('pg'), pctx=pgEl.getContext('2d');
+const PGW=960,PGH=856; pgEl.width=PGW*DPR; pgEl.height=PGH*DPR;
+const CELL=124,GAP=12,MLX=74,MTY=8;
+const cellX=i=>MLX+i*(CELL+GAP), cellY=j=>MTY+j*(CELL+GAP);
+const PR=48;   // raster resolution per panel
+const panelCv=[];  // one offscreen canvas per lower-triangle panel
+const panelKey=[];
+let pgPanels=[];
+for(let j=0;j<6;j++)for(let i=0;i<j;i++)pgPanels.push([i,j]);
+pgPanels.forEach((_,k)=>{const c=document.createElement('canvas');c.width=PR;c.height=PR;
+  panelCv[k]=c;panelKey[k]='';});
+let pgCursor=0;
+
+function evalAt(vals,A,K){ // vals: {S_ref,AR,t_c,sweep_c4,W0,P_SL}
+  return evalPoint(vals.AR,vals.W0,vals.S_ref,vals.t_c,vals.sweep_c4,vals.P_SL,A,K);
+}
+function renderPanel(k,sl6,A,K){
+  const [i,j]=pgPanels[k], vx=PGV[i], vy=PGV[j];
+  const c=panelCv[k].getContext('2d');
+  const img=c.createImageData(PR,PR), d=img.data;
+  const [sr,sg,sb]=C.surface;
+  const bx=DATA.box[vx], by=DATA.box[vy];
+  const vals={...sl6};
+  for(let py=0;py<PR;py++){
+    vals[vy]=by[1]-(py+.5)/PR*(by[1]-by[0]);
+    for(let px=0;px<PR;px++){
+      vals[vx]=bx[0]+(px+.5)/PR*(bx[1]-bx[0]);
+      const q=evalAt(vals,A,K);
+      const all3=q.fA&&q.fS&&q.fW;
+      let r=sr,g=sg,b=sb;
+      if(all3){
+        if(q.rWe<=1&&q.rWstr<=1&&q.rCL<=1){r=lerp(sr,C.hot[0],.72);g=lerp(sg,C.hot[1],.72);b=lerp(sb,C.hot[2],.72);}
+        else if((px+py)%5<2){r=lerp(r,C.mutedRgb[0],.5);g=lerp(g,C.mutedRgb[1],.5);b=lerp(b,C.mutedRgb[2],.5);}
+        else {r=lerp(r,C.mutedRgb[0],.16);g=lerp(g,C.mutedRgb[1],.16);b=lerp(b,C.mutedRgb[2],.16);}
+      } else {
+        const nf=(q.fA?1:0)+(q.fS?1:0)+(q.fW?1:0);
+        const a=nf*0.045;
+        r=lerp(r,C.mutedRgb[0],a);g=lerp(g,C.mutedRgb[1],a);b=lerp(b,C.mutedRgb[2],a);
+      }
+      const o=(py*PR+px)*4;d[o]=r;d[o+1]=g;d[o+2]=b;d[o+3]=255;
+    }
+  }
+  c.putImageData(img,0,0);
+}
+
+function drawGrid(st){
+  const {cur,A,sl,K}=st;
+  const sl6={...cur.slice6};
+  // during the morph phase follow the interpolated conditioning + slice
+  sl6.S_ref=sl.S_ref;sl6.t_c=sl.t_c;sl6.sweep_c4=sl.sweep_c4;sl6.P_SL=sl.P_SL;
+  const stateKey=fieldKey; // main map key: same inputs drive the cuts
+  // refresh at most 4 stale panels per frame, round-robin (keeps morph smooth)
+  let done=0;
+  for(let n=0;n<pgPanels.length&&done<4;n++){
+    const k=(pgCursor+n)%pgPanels.length;
+    if(panelKey[k]!==stateKey){renderPanel(k,sl6,A,K);panelKey[k]=stateKey;done++;}
+  }
+  pgCursor=(pgCursor+4)%pgPanels.length;
+
+  pctx.setTransform(DPR,0,0,DPR,0,0);pctx.clearRect(0,0,PGW,PGH);
+  pctx.font='11px system-ui,sans-serif';
+
+  pgPanels.forEach((pair,k)=>{
+    const [i,j]=pair, x=cellX(i), y=cellY(j), vx=PGV[i], vy=PGV[j];
+    pctx.imageSmoothingEnabled=true;
+    pctx.drawImage(panelCv[k],x,y,CELL,CELL);
+    pctx.strokeStyle=C.baseline;pctx.lineWidth=1;pctx.strokeRect(x,y,CELL,CELL);
+    const bx=DATA.box[vx], by=DATA.box[vy];
+    const X=v=>x+(v-bx[0])/(bx[1]-bx[0])*CELL;
+    const Y=v=>y+CELL-(v-by[0])/(by[1]-by[0])*CELL;
+    /* trust region */
+    if(cur.stats.tr_frac<99.5){
+      const tx=cur.tr[vx], ty=cur.tr[vy];
+      const cl=(v,a,b)=>Math.min(Math.max(v,a),b);
+      const x0=cl(X(tx[0]),x+1,x+CELL-1),x1=cl(X(tx[1]),x+1,x+CELL-1);
+      const y0=cl(Y(ty[1]),y+1,y+CELL-1),y1=cl(Y(ty[0]),y+1,y+CELL-1);
+      pctx.save();pctx.setLineDash([4,3]);pctx.strokeStyle=C.ink;pctx.globalAlpha=.5;
+      pctx.lineWidth=1;pctx.strokeRect(x0,y0,x1-x0,y1-y0);pctx.restore();
+    }
+    /* archive */
+    if(cur.archive_pts.length){
+      pctx.fillStyle=C.hotS;pctx.globalAlpha=.4;
+      const ix={S_ref:0,AR:1,t_c:2,sweep_c4:3,W0:4,P_SL:5};
+      for(const a of cur.archive_pts){
+        pctx.beginPath();pctx.arc(X(a[ix[vx]]),Y(a[ix[vy]]),1.5,0,7);pctx.fill();
+      }
+      pctx.globalAlpha=1;
+    }
+    /* corner crosshair */
+    if(cur.corner){
+      const cx=X(cur.corner[vx]), cy=Y(cur.corner[vy]);
+      pctx.strokeStyle=C.ink;pctx.lineWidth=1.5;
+      pctx.beginPath();pctx.arc(cx,cy,4.5,0,7);pctx.stroke();
+      pctx.beginPath();pctx.moveTo(cx-8,cy);pctx.lineTo(cx-4.5,cy);pctx.moveTo(cx+4.5,cy);pctx.lineTo(cx+8,cy);
+      pctx.moveTo(cx,cy-8);pctx.lineTo(cx,cy-4.5);pctx.moveTo(cx,cy+4.5);pctx.lineTo(cx,cy+8);pctx.stroke();
+    }
+  });
+
+  /* diagonal cells: variable name + 1-D trust-region squeeze bar */
+  for(let i=0;i<6;i++){
+    const x=cellX(i), y=cellY(i), v=PGV[i];
+    pctx.fillStyle=C.surface2;roundRect2(pctx,x,y,CELL,CELL,8);pctx.fill();
+    pctx.strokeStyle=C.baseline;pctx.lineWidth=1;roundRect2(pctx,x,y,CELL,CELL,8);pctx.stroke();
+    pctx.fillStyle=C.ink;pctx.font='600 15px system-ui,sans-serif';pctx.textAlign='center';
+    pctx.fillText(PGL[v],x+CELL/2,y+CELL/2-14);
+    const b=DATA.box[v], t=cur.tr[v];
+    const bx0=x+14,bw=CELL-28,by0=y+CELL/2+6;
+    pctx.fillStyle=C.grid;pctx.fillRect(bx0,by0,bw,7);
+    const f0=(t[0]-b[0])/(b[1]-b[0]), f1=(t[1]-b[0])/(b[1]-b[0]);
+    pctx.fillStyle=C.hotS;pctx.fillRect(bx0+f0*bw,by0,Math.max((f1-f0)*bw,2),7);
+    if(cur.corner){
+      const fc=(cur.corner[v]-b[0])/(b[1]-b[0]);
+      pctx.fillStyle=C.ink;pctx.fillRect(bx0+fc*bw-1,by0-3,2,13);
+    }
+    const pct=Math.round((f1-f0)*100);
+    pctx.fillStyle=C.muted;pctx.font='10.5px system-ui,sans-serif';
+    pctx.fillText(pct+'% of range',x+CELL/2,by0+24);
+  }
+
+  /* edge labels */
+  pctx.fillStyle=C.ink2;pctx.font='600 11px system-ui,sans-serif';
+  for(let j=1;j<6;j++){
+    pctx.save();pctx.translate(MLX-12,cellY(j)+CELL/2);pctx.rotate(-Math.PI/2);
+    pctx.textAlign='center';pctx.fillText(PGL[PGV[j]],0,0);pctx.restore();
+  }
+  for(let i=0;i<5;i++){
+    pctx.textAlign='center';
+    pctx.fillText(PGL[PGV[i]],cellX(i)+CELL/2,cellY(5)+CELL+18);
+  }
+}
+function roundRect2(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);
+  c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath();}
+
+/* ---------- campaign trace chart ---------- */
+const tlEl=document.getElementById('tl'), tctx=tlEl.getContext('2d');
+const TW=960,TH=150; tlEl.width=TW*DPR; tlEl.height=TH*DPR;
+const TP={l:44,r:16,t:14,b:26};
+function drawTimeline(st){
+  tctx.setTransform(DPR,0,0,DPR,0,0); tctx.clearRect(0,0,TW,TH);
+  const w=TW-TP.l-TP.r, h=TH-TP.t-TP.b;
+  const maxY=Math.max(...RD.map(d=>d.stats.both))*1.20||1;
+  const X=i=>TP.l+(i/(NR-1))*w, Y=v=>TP.t+h-(Math.min(v,maxY)/maxY)*h;
+
+  tctx.strokeStyle=C.grid;tctx.lineWidth=.75;tctx.fillStyle=C.muted;
+  tctx.font='10px system-ui,sans-serif';tctx.textAlign='right';
+  for(let k=0;k<=2;k++){const v=maxY*k/2,y=Y(v);
+    tctx.beginPath();tctx.moveTo(TP.l,y);tctx.lineTo(TP.l+w,y);tctx.stroke();
+    tctx.fillText(v.toFixed(0)+'%',TP.l-6,y+3);}
+
+  /* yield: filled area + line */
+  tctx.beginPath();tctx.moveTo(X(0),Y(0));
+  RD.forEach((d,i)=>tctx.lineTo(X(i),Y(d.stats.both)));
+  tctx.lineTo(X(NR-1),Y(0));tctx.closePath();
+  const grad=tctx.createLinearGradient(0,TP.t,0,TP.t+h);
+  grad.addColorStop(0,C.hotS);grad.addColorStop(1,'transparent');
+  tctx.globalAlpha=.28;tctx.fillStyle=grad;tctx.fill();tctx.globalAlpha=1;
+  tctx.beginPath();RD.forEach((d,i)=>i?tctx.lineTo(X(i),Y(d.stats.both)):tctx.moveTo(X(i),Y(d.stats.both)));
+  tctx.strokeStyle=C.hotS;tctx.lineWidth=2.5;
+  if(C.glow){tctx.shadowColor=C.hotS;tctx.shadowBlur=8;}
+  tctx.stroke();tctx.shadowBlur=0;
+
+  /* volume: the honest baseline -- the answer isn't getting bigger */
+  tctx.save();tctx.setLineDash([4,3]);tctx.beginPath();
+  RD.forEach((d,i)=>i?tctx.lineTo(X(i),Y(d.stats.vol)):tctx.moveTo(X(i),Y(d.stats.vol)));
+  tctx.strokeStyle=C.muted;tctx.lineWidth=1.5;tctx.stroke();tctx.restore();
+
+  RD.forEach((d,i)=>{
+    const x=X(i),y=Y(d.stats.both);
+    if(d.event){
+      tctx.save();tctx.translate(x,TP.t-4);tctx.rotate(Math.PI/4);
+      tctx.fillStyle=C.hotS;tctx.fillRect(-4,-4,8,8);tctx.restore();
+      tctx.strokeStyle=C.hotS;tctx.globalAlpha=.32;tctx.lineWidth=1;tctx.setLineDash([3,3]);
+      tctx.beginPath();tctx.moveTo(x,TP.t+2);tctx.lineTo(x,TP.t+h);tctx.stroke();
+      tctx.setLineDash([]);tctx.globalAlpha=1;
+    }
+    const wiped=d.stats.evicted>0&&d.stats.archive===0;
+    tctx.beginPath();tctx.arc(x,y,wiped?5:3.2,0,7);
+    tctx.fillStyle=wiped?C.repS:C.hotS;tctx.fill();
+    tctx.lineWidth=2;tctx.strokeStyle=C.surfaceS;tctx.stroke();
+    if(wiped){
+      tctx.fillStyle=C.repS;tctx.font='600 10px system-ui,sans-serif';tctx.textAlign='center';
+      tctx.fillText('archive wiped',x,y-11);
+    }
+    tctx.fillStyle=C.muted;tctx.font='10px system-ui,sans-serif';tctx.textAlign='center';
+    tctx.fillText(i,x,TP.t+h+15);
+  });
+
+  const px=X(Math.min(rp,NR-1));
+  tctx.strokeStyle=C.ink;tctx.globalAlpha=.5;tctx.lineWidth=1.5;
+  tctx.beginPath();tctx.moveTo(px,TP.t-8);tctx.lineTo(px,TP.t+h+4);tctx.stroke();tctx.globalAlpha=1;
+  const cd=RD[st.r];
+  tctx.fillStyle=C.ink;tctx.font='600 11px system-ui,sans-serif';
+  tctx.textAlign=px>TW-160?'right':'left';
+  tctx.fillText(`${cd.stats.both.toFixed(1)}%`,px+(px>TW-160?-8:8),Y(cd.stats.both)-9);
+}
+tlEl.addEventListener('click',ev=>{
+  const rect=tlEl.getBoundingClientRect();
+  const x=(ev.clientX-rect.left)*TW/rect.width;
+  const i=Math.round((x-TP.l)/(TW-TP.l-TP.r)*(NR-1));
+  rp=Math.min(Math.max(i,0),NR-1)+PH.verdict+.02;
+  scrub.value=Math.round(rp*1000); setPlaying(false);
+});
+
+/* ---------- DOM ---------- */
+const fmt=v=>v.toFixed(2)+'%';
+const DCOL={aerodynamics:'var(--aero)',structures:'var(--struct)',weights:'var(--wts)'};
+let lastKey='';
+function updateDom(st){
+  const {r,p,cur}=st;
+  const shown=p>PH.verdict?cur.stats:(r>0?RD[r-1].stats:{both:0,archive:0,tr_frac:100});
+  document.getElementById('tYield').textContent=shown.both.toFixed(1)+'%';
+  document.getElementById('tArch').textContent=shown.archive.toLocaleString();
+  document.getElementById('tTR').textContent=shown.tr_frac.toFixed(0)+'%';
+  document.getElementById('roundLabel').textContent=
+    `round ${r} / ${NR-1} · ${p<PH.pubEnd?'publish':p<PH.dotEnd?'sample':p<PH.msgStart?'verify':'broadcast'}`;
+
+  const cvs=document.getElementById('cvState');
+  cvs.innerHTML=[['W_empty · aero assumes',st.A.We,'kg'],
+                 ['W_structure · weights assumes',st.A.Wstr,'kg'],
+                 ['CL_max · structures assumes',st.A.CL,'']]
+    .map(([n,v,u])=>`<div class="drow"><span class="nm" style="width:auto;font-weight:400;color:var(--ink-2)">${n}</span>
+      <span style="margin-left:auto;font-weight:600;font-variant-numeric:tabular-nums">${v.toFixed(u?0:3)}${u?' '+u:''}</span></div>`).join('');
+
+  const key=r+':'+(p>PH.verdict?1:0);
+  if(key===lastKey)return; lastKey=key;
+  const showRound=p>PH.verdict?r:Math.max(r-1,0);
+  const d=RD[showRound];
+
+  document.getElementById('headline').textContent=d.headline;
+  document.getElementById('evSlot').innerHTML=d.event?
+    `<div class="evbox"><div class="t">◆ ${d.event.title}</div><div class="d">${d.event.detail}</div></div>`:'';
+  document.getElementById('discRows').innerHTML=Object.entries(d.notes).map(([k,n])=>
+    `<div class="drow"><i class="dot" style="background:${DCOL[k]}"></i>
+      <span class="nm">${k==='aerodynamics'?'aero':k}</span>
+      <span class="why">${n.cv} ${n.status==='republish'?`off ${n.drift}%`:`±${n.drift}%`} · own margins ${n.feas}%</span>
+      <span class="st ${n.status}">${n.status==='republish'?'REPUBLISH':'CLOSED'}</span></div>`).join('');
+
+  document.getElementById('journal').innerHTML=RD.slice(0,showRound+1).reverse().map(x=>
+    `<div class="jrow ${x.event?'ev':''} ${x.round===showRound?'cur':''}">
+      <span class="rn">${x.event?'◆':''}${x.round}</span><span class="tx">${x.headline}</span></div>`).join('');
+}
+
+document.getElementById('dataTable').innerHTML=
+  '<tr><th>round</th><th>yield %</th><th>volume %</th><th>trust region %</th><th>archive</th>'+
+  '<th>evicted</th><th>best W₀ kg</th><th>event</th><th>what happened</th></tr>'+
+  RD.map(x=>`<tr><td>${x.round}</td><td>${x.stats.both}</td><td>${x.stats.vol}</td>`+
+    `<td>${x.stats.tr_frac}</td><td>${x.stats.archive}</td>`+
+    `<td>${x.stats.evicted||''}</td><td>${x.stats.best_w0??'–'}</td>`+
+    `<td>${x.event?'◆':''}</td><td style="text-align:left">${x.headline}</td></tr>`).join('');
+
+/* ---------- tooltip ---------- */
+const tt=document.getElementById('tt');
+cvEl.addEventListener('mousemove',ev=>{
+  const rect=cvEl.getBoundingClientRect();
+  const x=(ev.clientX-rect.left)*CW/rect.width, y=(ev.clientY-rect.top)*CH/rect.height;
+  if(x<MAP.x||x>MAP.x+MAP.w||y<MAP.y||y>MAP.y+MAP.h){tt.style.display='none';return;}
+  const st=stateAt(rp);
+  const AR=AXX[0]+(x-MAP.x)/MAP.w*(AXX[1]-AXX[0]);
+  const W0=AXY[1]-(y-MAP.y)/MAP.h*(AXY[1]-AXY[0]);
+  const q=evalPoint(AR,W0,st.sl.S_ref,st.sl.t_c,st.sl.sweep_c4,st.sl.P_SL,st.A,st.K);
+  const row=(n,g)=>`<tr><td>${n}</td><td class="${g<=0?'ok':'bad'}">${g<=0?'−':'+'}${Math.abs(g).toFixed(2)}</td></tr>`;
+  const rr=(n,v)=>`<tr><td>${n}</td><td class="${v<=1?'ok':'bad'}">${v.toFixed(1)}×</td></tr>`;
+  const g=planformGeom(AR,W0,st.sl.S_ref,st.sl.sweep_c4);
+  const adm=q.fA&&q.fS&&q.fW&&q.rWe<=1&&q.rWstr<=1&&q.rCL<=1;
+  tt.innerHTML=`<svg width="96" height="66" viewBox="-48 -30 96 66" style="display:block;margin:0 auto 2px">
+      <path d="${planformSvgPath(g,76/g.b)}" fill="${adm?'var(--hot-core)':'var(--muted)'}"
+        fill-opacity="${adm?.95:.5}" stroke="var(--surface-2)" stroke-width="1"/></svg>
+    <div style="text-align:center;color:var(--muted);font-size:10.5px;margin-bottom:5px">
+      b ${g.b.toFixed(1)} m · ${adm?'<b style="color:var(--hot)">admissible</b>':'does not close'}</div>
+    <div class="tt-h">AR ${AR.toFixed(1)} · W₀ ${W0.toFixed(0)} kg</div><table>`+
+    row('stall margin',q.gStall)+row('cruise L/D',q.gLD)+row('tip deflection',q.gTip)+
+    row('spar depth',q.gSpar)+row('mass closure',q.gClose)+row('power loading',q.gPwr)+
+    `<tr><td colspan=2 style="padding-top:4px;color:var(--muted)">fixed-point residuals (of tol)</td></tr>`+
+    rr('W_empty',q.rWe)+rr('W_structure',q.rWstr)+rr('CL_max',q.rCL)+`</table>`;
+  tt.style.display='block';
+  const px=ev.clientX-rect.left, py=ev.clientY-rect.top;
+  tt.style.left=Math.min(px+16,rect.width-245)+'px';
+  tt.style.top=Math.max(py-40,6)+'px';
+});
+cvEl.addEventListener('mouseleave',()=>tt.style.display='none');
+
+/* ---------- transport ---------- */
+const playBtn=document.getElementById('playBtn'), scrub=document.getElementById('scrub');
+scrub.max=NR*1000-1;
+function setPlaying(v){playing=v;playBtn.textContent=v?'❚❚':'▶';}
+playBtn.onclick=()=>setPlaying(!playing);
+scrub.oninput=()=>{rp=+scrub.value/1000;setPlaying(false);};
+document.querySelectorAll('.speed button').forEach(b=>{
+  b.onclick=()=>{speed=+b.dataset.s;
+    document.querySelectorAll('.speed button').forEach(x=>x.setAttribute('aria-pressed',x===b));};
+});
+function tick(t){
+  const dt=Math.min((t-lastT)/1000,.1);lastT=t;
+  if(playing){rp+=dt*speed/ROUND_S;if(rp>=NR-.001)rp=0;scrub.value=Math.round(rp*1000);}
+  draw(t/1000);requestAnimationFrame(tick);
+}
+readTheme();
+if(!matchMedia('(prefers-reduced-motion: reduce)').matches)setPlaying(true);
+requestAnimationFrame(t=>{lastT=t;requestAnimationFrame(tick);});
+new MutationObserver(()=>{themeDirty=true;}).observe(rootEl,{attributes:true,attributeFilter:['data-theme']});
+</script>
+</body>
+</html>

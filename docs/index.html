@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>floodlight — decentralized MDAO by agent consensus</title>
+<style>
+  :root{color-scheme:dark}
+  body{margin:0;background:#0b0910;color:#f4f1fa;
+    font:16px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif;
+    display:flex;align-items:center;justify-content:center;min-height:100vh;padding:32px 20px}
+  .wrap{max-width:640px;width:100%}
+  h1{font-size:28px;line-height:1.2;letter-spacing:-.015em;margin:0 0 8px}
+  .sub{color:#bdb6cc;font-size:15px;margin-bottom:32px}
+  a.card{display:block;text-decoration:none;color:inherit;background:#14111f;
+    border:1px solid rgba(244,241,250,.13);border-radius:14px;padding:18px 20px;margin-bottom:14px;
+    transition:border-color .15s,transform .15s}
+  a.card:hover{border-color:#fdc426;transform:translateY(-1px)}
+  a.card .t{font-size:17px;font-weight:650;display:flex;align-items:center;gap:9px}
+  a.card .t .dot{width:9px;height:9px;border-radius:50%;background:#fdc426;flex:none}
+  a.card .d{color:#bdb6cc;font-size:13.5px;margin-top:5px}
+  .meta{color:#8b839c;font-size:12.5px;margin-top:26px;line-height:1.6;
+    border-top:1px solid rgba(244,241,250,.10);padding-top:16px}
+  code{font:.9em ui-monospace,Menlo,Consolas,monospace;background:rgba(244,241,250,.08);
+    padding:1px 5px;border-radius:4px}
+  .meta a{color:#fdc426}
+</style></head><body><div class="wrap">
+
+<h1>Decentralized MDAO by Agent Consensus</h1>
+<div class="sub">Three asynchronous discipline agents — aerodynamics, structures, weights — search a
+shared 6-D aircraft design space under a publish–intersect–verify protocol. A 12-round campaign
+for a medium fixed-wing UAV.</div>
+
+<a class="card" href="timelapse.html">
+  <div class="t"><span class="dot"></span>Interactive timelapse</div>
+  <div class="d">Watch the campaign run: agents publishing regions, the witness verifying,
+  the admissible set forming and collapsing. Includes the 6-D pairwise slice matrix and a
+  scrubable timeline. Hover the map for live constraint margins.</div>
+</a>
+
+<a class="card" href="writeup.html">
+  <div class="t"><span class="dot"></span>Write-up</div>
+  <div class="d">The concept, the agent roles, each discipline's decisions and tolerances, the
+  design criteria, and all 12 rounds analyzed with snapshots. Includes an honesty appendix on
+  what is real computation versus illustrative physics.</div>
+</a>
+
+<a class="card" href="writeup.pdf">
+  <div class="t"><span class="dot"></span>Write-up (PDF)</div>
+  <div class="d">Same document, 26 pages A4 — for printing or emailing.</div>
+</a>
+
+<div class="meta">
+  Source, contract schema, and the campaign engine are in the repository root. Regenerate
+  everything with <code>./build.sh</code> (numpy only). The physics is illustrative — see
+  §8 of the write-up.
+</div>
+
+</div></body></html>

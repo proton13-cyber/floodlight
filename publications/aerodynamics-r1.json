@@ -1,0 +1,130 @@
+{
+  "schema_version": "1.0.0",
+  "publication_id": "aerodynamics-r1-1de5aa30",
+  "supersedes": null,
+  "discipline": "aerodynamics",
+  "round": 1,
+  "agent": {
+    "id": "aero-agent",
+    "model": "claude-opus-5",
+    "prompt_version": "aero-v0.4",
+    "run_id": "run_2026-08-11T14:01:55Z_2b70"
+  },
+  "design_space_ref": { "id": "uav-medium", "version": 1, "hash": "sha256:PLACEHOLDER_COMPUTED_BY_TOOLING" },
+  "mission_ref": { "id": "ref-mission-A", "hash": "sha256:PLACEHOLDER" },
+  "created_at": "2026-08-11T14:11:38Z",
+  "status": "published",
+
+  "validity": {
+    "box": {
+      "S_ref": [8.0, 25.0],
+      "AR": [9.0, 24.0],
+      "t_c": [0.08, 0.16],
+      "sweep_c4": [0.0, 12.0],
+      "W0": [400.0, 1200.0],
+      "P_SL": [40.0, 160.0]
+    },
+    "extrapolation_policy": "reject"
+  },
+
+  "active_subspace": [
+    { "variable": "S_ref", "sensitivity": 1.0, "method": "morris" },
+    { "variable": "AR", "sensitivity": 0.63, "method": "morris" },
+    { "variable": "W0", "sensitivity": 0.58, "method": "morris" },
+    { "variable": "t_c", "sensitivity": 0.34, "method": "morris" },
+    { "variable": "sweep_c4", "sensitivity": 0.09, "method": "morris" },
+    { "variable": "P_SL", "sensitivity": 0.0, "method": "morris" }
+  ],
+
+  "conditioning": [
+    {
+      "coupling_variable": "W_empty",
+      "assumed_value": 390.0,
+      "units": "kg",
+      "source": { "type": "seed", "publication_id": null, "note": "Seed from the design-space registry. Sets the mid-mission mass and therefore the cruise CL at which L/D is evaluated." },
+      "drift_tolerance": { "kind": "relative", "value": 0.05 }
+    }
+  ],
+
+  "provides": [
+    {
+      "coupling_variable": "CL_max",
+      "units": "-",
+      "surrogate": {
+        "form": "analytic",
+        "inputs": ["t_c", "sweep_c4"],
+        "expression": "1.35 + 2.2*t_c - 0.012*sweep_c4",
+        "fit": { "n_train": 180, "r2": 0.958, "rmse": 0.031, "cv": "5-fold" },
+        "sigma": { "form": "constant", "value": 0.05 }
+      }
+    }
+  ],
+
+  "constraints": [
+    {
+      "id": "AER.V_STALL",
+      "description": "Sea-level flaps-up stall speed at design gross mass must not exceed 28 m/s. Binds at high wing loading.",
+      "requirement_ref": "REQ-STALL",
+      "sense": "le_zero",
+      "normalization": { "kind": "limit_relative", "scale": 28.0, "description": "g = (V_stall - 28)/28." },
+      "criticality": "hard",
+      "surrogate": {
+        "form": "analytic",
+        "inputs": ["W0", "S_ref", "t_c", "sweep_c4"],
+        "expression": "((2*W0*9.80665/(1.225*S_ref*(1.35 + 2.2*t_c - 0.012*sweep_c4)))**0.5 - 28.0) / 28.0",
+        "fit": { "n_train": 180, "r2": 0.991, "rmse": 0.011, "cv": "5-fold" },
+        "sigma": { "form": "constant", "value": 0.02 }
+      },
+      "reporting": {
+        "physical_expression": "(2*W0*9.80665/(1.225*S_ref*(1.35 + 2.2*t_c - 0.012*sweep_c4)))**0.5",
+        "limit": 28.0,
+        "units": "m/s"
+      }
+    },
+    {
+      "id": "AER.LD_CRUISE",
+      "description": "Cruise L/D at mid-mission mass must meet the endurance requirement. Evaluated at the CONDITIONED W_empty; this constraint moves when weights republishes.",
+      "requirement_ref": "REQ-LD",
+      "sense": "le_zero",
+      "normalization": { "kind": "limit_relative", "scale": 12.0, "description": "g = (12 - L/D)/12; negative means the requirement is met." },
+      "criticality": "hard",
+      "surrogate": {
+        "form": "analytic",
+        "inputs": ["W_empty", "W0", "S_ref", "AR", "t_c"],
+        "expression": "(12.0 - ( (2*(W_empty + 90.0 + 0.09*W0)*9.80665/(1.225*40.0**2*S_ref)) / ( (0.014 + 0.05*(t_c-0.12) + 0.15/S_ref) + (2*(W_empty + 90.0 + 0.09*W0)*9.80665/(1.225*40.0**2*S_ref))**2 / (pi*(1.78*(1-0.045*AR**0.68)-0.64)*AR) ) )) / 12.0",
+        "fit": { "n_train": 180, "r2": 0.968, "rmse": 0.024, "cv": "5-fold" },
+        "sigma": { "form": "constant", "value": 0.035 }
+      },
+      "reporting": {
+        "physical_expression": "CL_cr / (CD0 + CL_cr**2/(pi*e*AR)) at V=40 m/s, sea level",
+        "limit": 12.0,
+        "units": "-"
+      }
+    }
+  ],
+
+  "objectives": [
+    {
+      "id": "AER.CD0",
+      "direction": "minimize",
+      "units": "-",
+      "surrogate": {
+        "form": "analytic",
+        "inputs": ["S_ref", "t_c"],
+        "expression": "0.014 + 0.05*(t_c-0.12) + 0.15/S_ref"
+      }
+    }
+  ],
+
+  "evidence": {
+    "tool": { "name": "AVL + XFOIL", "version": "3.36 / 6.99", "fidelity": "low" },
+    "method_ref": "VLM trim sweep, 2D section polars swept to 3D; Oswald factor from Raymer straight-wing correlation.",
+    "n_evaluations": 180,
+    "doe": { "type": "sobol", "seed": 991 },
+    "input_deck_refs": [
+      { "uri": "s3://mdao-runs/aero/r1/base.avl", "sha256": "sha256:PLACEHOLDER", "media_type": "text/plain" }
+    ],
+    "convergence_notes": "XFOIL failed to converge on 6 thin-section cases at high Re; t_c validity floor held at 0.08.",
+    "known_limitations": "No compressibility, no propeller-wash interference, CD0 build-up is a flat-plate estimate with a fixed wetted-area ratio. Coefficients are illustrative, not a validated method."
+  }
+}
