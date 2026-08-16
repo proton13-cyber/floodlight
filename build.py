@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Regenerate everything: campaign data -> interactive viz -> plain-language write-up.
+Regenerate everything: campaign data -> interactive viz -> plain-language explainer.
 
 Cross-platform replacement for build.sh, which needs a POSIX shell and so does not
 run in PowerShell. Same three steps, same outputs.
@@ -49,7 +49,7 @@ def main() -> int:
         raise SystemExit("template placeholder not substituted -- check viz template")
     print(f"    docs/timelapse.html  {out.stat().st_size // 1024} KB")
 
-    print("==> 3/3  building the write-up")
+    print("==> 3/3  building the plain-language explainer")
     figs = Path(args.figs)
     if figs.is_dir() and any(figs.glob("*.png")):
         run("build_writeup.py")

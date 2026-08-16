@@ -7,17 +7,21 @@
   body{margin:0;background:#0b0910;color:#f4f1fa;
     font:16px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif;
     display:flex;align-items:center;justify-content:center;min-height:100vh;padding:32px 20px}
-  .wrap{max-width:640px;width:100%}
+  .wrap{max-width:660px;width:100%}
   h1{font-size:28px;line-height:1.2;letter-spacing:-.015em;margin:0 0 8px}
-  .sub{color:#bdb6cc;font-size:15px;margin-bottom:32px}
+  .sub{color:#bdb6cc;font-size:15px;margin-bottom:30px}
+  h2{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:#8b839c;
+    font-weight:700;margin:28px 0 12px}
   a.card{display:block;text-decoration:none;color:inherit;background:#14111f;
-    border:1px solid rgba(244,241,250,.13);border-radius:14px;padding:18px 20px;margin-bottom:14px;
+    border:1px solid rgba(244,241,250,.13);border-radius:14px;padding:18px 20px;margin-bottom:12px;
     transition:border-color .15s,transform .15s}
   a.card:hover{border-color:#fdc426;transform:translateY(-1px)}
   a.card .t{font-size:17px;font-weight:650;display:flex;align-items:center;gap:9px}
   a.card .t .dot{width:9px;height:9px;border-radius:50%;background:#fdc426;flex:none}
   a.card .d{color:#bdb6cc;font-size:13.5px;margin-top:5px}
-  .meta{color:#8b839c;font-size:12.5px;margin-top:26px;line-height:1.6;
+  a.card .pdf{color:#8b839c;font-size:12.5px;margin-top:8px}
+  a.card .pdf b{color:#fdc426;font-weight:600}
+  .meta{color:#8b839c;font-size:12.5px;margin-top:28px;line-height:1.6;
     border-top:1px solid rgba(244,241,250,.10);padding-top:16px}
   code{font:.9em ui-monospace,Menlo,Consolas,monospace;background:rgba(244,241,250,.08);
     padding:1px 5px;border-radius:4px}
@@ -37,23 +41,33 @@ for a medium fixed-wing UAV.</div>
   constraint margins.</div>
 </a>
 
+<h2>Two write-ups, same project</h2>
+
 <a class="card" href="writeup.html">
-  <div class="t"><span class="dot"></span>Write-up</div>
-  <div class="d">The concept, the agent roles, the toolchain behind the numbers (AVL vortex
-  lattice, NeuralFoil section polars, fully-stressed beam sizing), and all 12 rounds
-  analyzed with snapshots. Written for readers who are not aerospace engineers.</div>
+  <div class="t"><span class="dot"></span>Campaign write-up</div>
+  <div class="d">The technical account: the contract and the five ideas it encodes, the
+  agents and scaffolding, the design criteria, and all 12 rounds analyzed round by round
+  with snapshots. Ends with what is real computation and what is not.</div>
+  <div class="pdf">Also as <b>PDF, 26 pages</b> → <a href="writeup.pdf" style="color:#fdc426">writeup.pdf</a></div>
 </a>
 
-<a class="card" href="writeup.pdf">
-  <div class="t"><span class="dot"></span>Write-up (PDF)</div>
-  <div class="d">Same document, A4 — for printing or emailing.</div>
+<a class="card" href="explainer.html">
+  <div class="t"><span class="dot"></span>Plain-language explainer</div>
+  <div class="d">The same project for readers who are not aerospace engineers. Why coupling
+  makes design hard, why a region beats a point, and §4 on the toolchain behind the numbers
+  — AVL vortex lattice, NeuralFoil section polars, fully-stressed beam sizing, and what each
+  one still cannot do.</div>
+  <div class="pdf">Also as <b>PDF, 16 pages</b> → <a href="explainer.pdf" style="color:#fdc426">explainer.pdf</a></div>
 </a>
+
+<h2>Results</h2>
 
 <a class="card" href="design_shortlist.pdf">
-  <div class="t"><span class="dot"></span>Design shortlist (PDF)</div>
+  <div class="t"><span class="dot"></span>Design shortlist</div>
   <div class="d">Twenty admissible aircraft from the final round, drawn to scale — planform,
   span, wing loading, active constraints and coupling residuals for each. The spread across
   the shortlist <em>is</em> the trade study.</div>
+  <div class="pdf"><b>PDF, 5 pages</b></div>
 </a>
 
 <div class="meta">
@@ -61,7 +75,7 @@ for a medium fixed-wing UAV.</div>
   everything with <code>python build.py</code>, then <code>python report_designs.py</code>
   and <code>python make_design_report.py</code> for the shortlist. Aerodynamics runs AVL +
   NeuralFoil and structures runs a fully-stressed beam; what is still estimated rather than
-  computed is listed in §4 of the write-up.
+  computed is listed in §4 of the explainer.
 </div>
 
 </div></body></html>
