@@ -13,9 +13,9 @@ behind them.
 
 | Document | Read online | Download |
 |---|---|---|
-| **Campaign write-up** — the technical account: the contract, the agents, all 12 rounds | [HTML](https://proton13-cyber.github.io/floodlight/writeup.html) | [PDF · 26 pp](https://github.com/proton13-cyber/floodlight/raw/main/docs/writeup.pdf) |
-| **Plain-language explainer** — the same project for readers who are not aerospace engineers, including §4 on the AVL / NeuralFoil / beam-sizing toolchain | [HTML](https://proton13-cyber.github.io/floodlight/explainer.html) | [PDF · 16 pp](https://github.com/proton13-cyber/floodlight/raw/main/docs/explainer.pdf) |
+| **Plain-language explainer** — the current account, for readers who are not aerospace engineers. §4 covers the AVL / NeuralFoil / beam-sizing toolchain and what each tool does and does not cover | [HTML](https://proton13-cyber.github.io/floodlight/explainer.html) | [PDF · 16 pp](https://github.com/proton13-cyber/floodlight/raw/main/docs/explainer.pdf) |
 | **Design shortlist** — 20 admissible aircraft from the final round, drawn to scale, with active constraints and coupling residuals | — | [PDF · 5 pp](https://github.com/proton13-cyber/floodlight/raw/main/docs/design_shortlist.pdf) |
+| **Campaign write-up** *(archived — v1)* — the original technical account: the contract, the agents, all 12 rounds. Describes the campaign as it ran on illustrative placeholder physics, before AVL, NeuralFoil and the beam model. Its structure and contract discussion still hold; its numbers do not | [HTML](https://proton13-cyber.github.io/floodlight/writeup.html) | [PDF · 27 pp](https://github.com/proton13-cyber/floodlight/raw/main/docs/writeup.pdf) |
 
 The *Read online* links go live once GitHub Pages is enabled (Settings → Pages → Source
 `main`, folder `/docs`). The *Download* links are served straight from the repository and
