@@ -192,8 +192,17 @@
       </div>
 
       <div class="card">
-        <h2>Coupling state (assumed by consumers)</h2>
+        <h2>Coupling beliefs — assumed vs published</h2>
         <div id="cvState"></div>
+        <div style="font-size:9.5px;color:var(--muted);line-height:1.45;margin-top:6px">
+          Distributions over the jointly trusted box, each curve normalized to its own
+          peak. Dashed = the consumer's belief about its partner (a vertical line is a
+          scalar assumption); filled = what the supplier actually publishes.
+          Consistency is checked design-by-design, not by curve overlap &mdash; the
+          red strip on the baseline marks where designs fail the pointwise tolerance
+          &mdash; the same red as a REPUBLISH verdict, because that is what it is:
+          designs whose premises do not hold &mdash;
+          which similar-looking silhouettes can hide. Separation is staleness.</div>
       </div>
 
       <div class="card">
@@ -249,7 +258,7 @@ function readTheme(){
      aero:hexToRgb(g('--aero')),struct:hexToRgb(g('--struct')),wts:hexToRgb(g('--wts')),
      aeroS:g('--aero'),structS:g('--struct'),wtsS:g('--wts'),
      hot:hexToRgb(g('--hot')),hotS:g('--hot'),hotCoreS:g('--hot-core'),
-     repS:g('--republish'),holdS:g('--hold'),
+     repS:g('--republish'),rep:hexToRgb(g('--republish')),holdS:g('--hold'),
      regionA:parseFloat(g('--region-a')),edgeW:parseFloat(g('--edge-w')),glow:parseFloat(g('--glow'))};
   themeDirty=false; fieldKey='';
 }
@@ -285,15 +294,19 @@ function kernelAt(r){
 }
 
 /* ---------- planform ---------- */
-const TAPER=0.45;
+const TAPER=0.5;   // was 0.45 -- disagreed with every AVL deck ever run
 function planformGeom(AR,W0,S,sw){
   const b=Math.sqrt(AR*S), cr=2*S/(b*(1+TAPER)), ct=TAPER*cr;
   const tn=Math.tan(sw*Math.PI/180), yt=b/2;
   const wing=[[-0.25*cr,0],[yt*tn-0.25*ct,yt],[yt*tn+0.75*ct,yt],[0.75*cr,0]];
-  const L=6.4*Math.cbrt(W0/600), wf=L/9, xle=-0.42*L, xte=0.58*L;
-  const bt=0.30*b, crt=0.55*ct+0.35, ctt=0.6*crt, tt=Math.tan(14*Math.PI/180), ytt=bt/2;
-  const xtail=xte-crt*1.05;
-  const tail=[[xtail,0],[xtail+ytt*tt,ytt],[xtail+ytt*tt+ctt,ytt],[xtail+crt,0]];
+  // fuselage per the shared configuration: volume-driven pod, tail-arm-driven length
+  const Lvol=6*Math.cbrt((0.00024*W0+0.51)/1.8661);
+  const rt=Math.sqrt(S/AR), mac=1.037037*rt, lt=3.5*mac;
+  const ch=0.18687*Math.sqrt(S), bt=0.8409*Math.sqrt(S), nose=0.42*Lvol;
+  const L=Math.max(Lvol, 1.05*(0.25*cr+lt+ch)+nose);
+  const wf=Lvol/6, xle=-nose, xte=L-nose;
+  const xtail=0.25*cr+lt, tt2=Math.tan(12*Math.PI/180), ytt=bt/2, ctt=0.65*ch;
+  const tail=[[xtail,0],[xtail+ytt*tt2,ytt],[xtail+ytt*tt2+ctt,ytt],[xtail+ch,0]];
   return{b,cr,L,wf,xle,xte,wing,tail};
 }
 function tracePlanform(c,px,py,s,g){
@@ -351,13 +364,28 @@ const DPR=Math.min(devicePixelRatio||1,2), CW=960, CH=700;
 cvEl.width=CW*DPR; cvEl.height=CH*DPR;
 const MAP={x:272,y:100,w:466,h:466};
 const AXX=DATA.box.AR, AXY=DATA.box.W0;
+
+/* ---------- truth grids shipped from Python ----------
+   This file used to re-implement the physics in JS (evalPoint/kernelAt): a frozen
+   copy of the ORIGINAL hand-written r1 surrogates. It drifted through eleven physics
+   revisions with nothing to catch it -- an undeclared consumer with a stale verbatim
+   snapshot, the exact failure the repo exists to name. The JS now only paints what
+   the engine evaluated. */
+function b64u8(str){const bin=atob(str);const a=new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++)a[i]=bin.charCodeAt(i);return a;}
+const _gc={f:{},t:{},p:{}};
+function roundIdx(v){return Math.min(DATA.rounds.length-1,Math.max(0,Math.round(v)));}
+function fieldOf(r){if(!_gc.f[r])_gc.f[r]=b64u8(DATA.rounds[r].field.m);return _gc.f[r];}
+function ttOf(r){if(!_gc.t[r]){const t=DATA.rounds[r].tt;
+  _gc.t[r]={w:t.w,h:t.h,g:t.g.map(b64u8),r:t.r.map(b64u8)};}return _gc.t[r];}
+function pgOf(r){if(!_gc.p[r])_gc.p[r]=DATA.rounds[r].pg.m.map(b64u8);return _gc.p[r];}
 const mx=a=>MAP.x+(a-AXX[0])/(AXX[1]-AXX[0])*MAP.w;
 const my=w=>MAP.y+MAP.h-(w-AXY[0])/(AXY[1]-AXY[0])*MAP.h;
 
 const NODES={
-  aerodynamics:{x:120,y:176,label:'Aerodynamics',tool:'AVL + XFOIL',ck:'aero'},
-  structures:{x:120,y:498,label:'Structures',tool:'ASWING 5.99',ck:'struct'},
-  weights:{x:874,y:498,label:'Weights',tool:'Raymer gw 0.6',ck:'wts'},
+  aerodynamics:{x:120,y:176,label:'Aerodynamics',tool:'AVL + NeuralFoil',ck:'aero'},
+  structures:{x:120,y:498,label:'Structures',tool:'AVL spanload + box beam',ck:'struct'},
+  weights:{x:874,y:498,label:'Weights',tool:'component build-up',ck:'wts'},
   orchestrator:{x:436,y:44,label:'Orchestrator',tool:'intersect + fixpoint',ck:null,side:'right'},
   witness:{x:874,y:176,label:'Witness',tool:'deterministic checks',ck:null},
 };
@@ -367,20 +395,18 @@ const FW=156,FH=156;
 const fieldCv=document.createElement('canvas'); fieldCv.width=FW; fieldCv.height=FH;
 const fieldCtx=fieldCv.getContext('2d');
 let fieldKey='';
-function renderField(A,sl,K){
-  const key=[A.We,A.Wstr,A.CL,sl.S_ref,sl.t_c,sl.sweep_c4,sl.P_SL,K.tip,K.wstr,K.cd0]
-    .map(v=>v.toPrecision(6)).join(',');
-  if(key===fieldKey)return; fieldKey=key;
+function renderField(ri){
+  if(fieldKey===ri)return; fieldKey=ri;
+  const FD=DATA.rounds[ri].field, GW=FD.w, GH=FD.h, M=fieldOf(ri);
   const fa=new Uint8Array(FW*FH),fs=new Uint8Array(FW*FH),fw=new Uint8Array(FW*FH),
         ad=new Uint8Array(FW*FH),hz=new Uint8Array(FW*FH);
   for(let j=0;j<FH;j++){
-    const W0=AXY[1]-(j+.5)/FH*(AXY[1]-AXY[0]);
+    const gj=Math.min(GH-1,Math.floor(j*GH/FH));
     for(let i=0;i<FW;i++){
-      const AR=AXX[0]+(i+.5)/FW*(AXX[1]-AXX[0]);
-      const q=evalPoint(AR,W0,sl.S_ref,sl.t_c,sl.sweep_c4,sl.P_SL,A,K);
-      const o=j*FW+i;
-      fa[o]=q.fA?1:0; fs[o]=q.fS?1:0; fw[o]=q.fW?1:0;
-      if(q.fA&&q.fS&&q.fW){ if(q.rWe<=1&&q.rWstr<=1&&q.rCL<=1) ad[o]=1; else hz[o]=1; }
+      const gi=Math.min(GW-1,Math.floor(i*GW/FW));
+      const bb=M[gj*GW+gi], o=j*FW+i;
+      fa[o]=bb&1; fs[o]=(bb>>1)&1; fw[o]=(bb>>2)&1;
+      if((bb&7)===7){ if((bb>>4)&1) ad[o]=1; else hz[o]=1; }
     }
   }
   const img=fieldCtx.createImageData(FW,FH), d=img.data;
@@ -455,7 +481,7 @@ function drawPulse(f,t,tt,color,r=5){
 function draw(time){
   const st=stateAt(rp), {r,p,cur,A,sl,K}=st;
   if(themeDirty)readTheme();
-  renderField(A,sl,K);
+  renderField(roundIdx(rp));
   ctx.setTransform(DPR,0,0,DPR,0,0);
   ctx.clearRect(0,0,CW,CH);
 
@@ -618,26 +644,24 @@ let pgCursor=0;
 function evalAt(vals,A,K){ // vals: {S_ref,AR,t_c,sweep_c4,W0,P_SL}
   return evalPoint(vals.AR,vals.W0,vals.S_ref,vals.t_c,vals.sweep_c4,vals.P_SL,A,K);
 }
-function renderPanel(k,sl6,A,K){
-  const [i,j]=pgPanels[k], vx=PGV[i], vy=PGV[j];
+function renderPanel(k,ri){
   const c=panelCv[k].getContext('2d');
   const img=c.createImageData(PR,PR), d=img.data;
   const [sr,sg,sb]=C.surface;
-  const bx=DATA.box[vx], by=DATA.box[vy];
-  const vals={...sl6};
+  const M=pgOf(ri)[k], GP=DATA.rounds[ri].pg.pr;
   for(let py=0;py<PR;py++){
-    vals[vy]=by[1]-(py+.5)/PR*(by[1]-by[0]);
+    const gy=Math.min(GP-1,Math.floor(py*GP/PR));
     for(let px=0;px<PR;px++){
-      vals[vx]=bx[0]+(px+.5)/PR*(bx[1]-bx[0]);
-      const q=evalAt(vals,A,K);
-      const all3=q.fA&&q.fS&&q.fW;
+      const gx=Math.min(GP-1,Math.floor(px*GP/PR));
+      const bb=M[gy*GP+gx];
+      const all3=(bb&7)===7, adm=(bb>>4)&1;
       let r=sr,g=sg,b=sb;
       if(all3){
-        if(q.rWe<=1&&q.rWstr<=1&&q.rCL<=1){r=lerp(sr,C.hot[0],.72);g=lerp(sg,C.hot[1],.72);b=lerp(sb,C.hot[2],.72);}
+        if(adm){r=lerp(sr,C.hot[0],.72);g=lerp(sg,C.hot[1],.72);b=lerp(sb,C.hot[2],.72);}
         else if((px+py)%5<2){r=lerp(r,C.mutedRgb[0],.5);g=lerp(g,C.mutedRgb[1],.5);b=lerp(b,C.mutedRgb[2],.5);}
         else {r=lerp(r,C.mutedRgb[0],.16);g=lerp(g,C.mutedRgb[1],.16);b=lerp(b,C.mutedRgb[2],.16);}
       } else {
-        const nf=(q.fA?1:0)+(q.fS?1:0)+(q.fW?1:0);
+        const nf=(bb&1)+((bb>>1)&1)+((bb>>2)&1);
         const a=nf*0.045;
         r=lerp(r,C.mutedRgb[0],a);g=lerp(g,C.mutedRgb[1],a);b=lerp(b,C.mutedRgb[2],a);
       }
@@ -657,7 +681,8 @@ function drawGrid(st){
   let done=0;
   for(let n=0;n<pgPanels.length&&done<4;n++){
     const k=(pgCursor+n)%pgPanels.length;
-    if(panelKey[k]!==stateKey){renderPanel(k,sl6,A,K);panelKey[k]=stateKey;done++;}
+    const _ri=roundIdx(rp);
+    if(panelKey[k]!==_ri){renderPanel(k,_ri);panelKey[k]=_ri;done++;}
   }
   pgCursor=(pgCursor+4)%pgPanels.length;
 
@@ -805,6 +830,86 @@ tlEl.addEventListener('click',ev=>{
   scrub.value=Math.round(rp*1000); setPlaying(false);
 });
 
+/* ---------- belief-distribution panel ---------- */
+const DIST=DATA.dist, DABBR={aerodynamics:'aero',structures:'structures',weights:'weights'};
+const DCC={aerodynamics:()=>C.aero,structures:()=>C.struct,weights:()=>C.wts};
+const SCAL={W_empty:'We',W_structure:'Wstr',CL_max:'CL'};
+let _bpBuilt=false,_bpRound=-1;
+function _rgb(c,a){return `rgba(${c[0]},${c[1]},${c[2]},${a})`;}
+function buildBeliefPanel(){
+  const el=document.getElementById('cvState');
+  el.innerHTML=DIST.items.map((it,k)=>`
+    <div style="margin:7px 0 9px">
+      <div style="display:flex;align-items:baseline;font-size:10.5px;margin-bottom:2px">
+        <span style="font-weight:600">${it.cv}</span>
+        <span style="margin-left:auto;font-variant-numeric:tabular-nums;color:var(--ink-2)" id="bpv${k}"></span>
+      </div>
+      <div style="display:flex;gap:10px;font-size:9px;color:var(--muted);margin-bottom:3px">
+        <span><svg width="14" height="7"><line x1="0" y1="3.5" x2="14" y2="3.5" stroke-dasharray="3 2" stroke-width="2" id="bpl${k}"/></svg> ${DABBR[it.consumer]} assumes</span>
+        <span><svg width="14" height="7"><rect width="14" height="7" rx="1.5" id="bpr${k}"/></svg> ${DABBR[it.supplier]} publishes</span>
+        <span style="margin-left:auto" id="bpo${k}"></span>
+      </div>
+      <canvas id="bpc${k}" style="width:100%;height:44px;display:block"></canvas>
+      <div style="display:flex;font-size:8.5px;color:var(--muted)">
+        <span>${it.lo.toFixed(it.unit?0:2)}${it.unit?' '+it.unit:''}</span>
+        <span style="margin-left:auto">${it.hi.toFixed(it.unit?0:2)}${it.unit?' '+it.unit:''}</span>
+      </div>
+    </div>`).join('');
+  DIST.items.forEach((it,k)=>{
+    document.getElementById('bpl'+k).setAttribute('stroke',_rgb(DCC[it.consumer](),0.95));
+    document.getElementById('bpr'+k).setAttribute('fill',_rgb(DCC[it.supplier](),0.6));
+  });
+  _bpBuilt=true;
+}
+function drawDist(cv,it,ri){
+  const c=document.getElementById('bpc'+cv);
+  const W=c.clientWidth||232,H=44;
+  if(c.width!==W*DPR){c.width=W*DPR;c.height=H*DPR;}
+  const g=c.getContext('2d');g.setTransform(DPR,0,0,DPR,0,0);g.clearRect(0,0,W,H);
+  const rd=it.rounds[ri],NB=rd.a.length,bw=W/NB;
+  g.strokeStyle=_rgb(C.mutedRgb,.35);g.lineWidth=1;
+  g.beginPath();g.moveTo(0,H-.5);g.lineTo(W,H-.5);g.stroke();
+  const cs=DCC[it.supplier](),cc=DCC[it.consumer]();
+  // supplier: solid silhouette
+  g.beginPath();g.moveTo(0,H);
+  for(let i=0;i<NB;i++){const y=H-1-rd.a[i]/100*(H-4);
+    g.lineTo(i*bw,y);g.lineTo((i+1)*bw,y);}
+  g.lineTo(W,H);g.closePath();
+  g.fillStyle=_rgb(cs,.42);g.fill();g.strokeStyle=_rgb(cs,.9);g.lineWidth=1.4;g.stroke();
+  // failure strip: alpha = share of designs in that bin failing the pointwise
+  // tolerance. Consistency is design-by-design; matching silhouettes can still
+  // disagree, and this shows where.
+  if(rd.f)for(let i=0;i<NB;i++){if(rd.a[i]>0&&rd.f[i]>0){
+    g.fillStyle=_rgb(C.rep,0.2+0.8*rd.f[i]/100);
+    g.fillRect(i*bw,H-1,bw,-2.5);}}
+  // consumer belief: dashed outline (a model) or a vertical needle (a scalar) --
+  // identity never by color alone
+  g.setLineDash([4,3]);g.strokeStyle=_rgb(cc,.95);g.lineWidth=1.8;
+  if('bv' in rd){
+    const x=(rd.bv-it.lo)/(it.hi-it.lo)*W;
+    g.beginPath();g.moveTo(x,2);g.lineTo(x,H-1);g.stroke();
+  }else{
+    g.beginPath();
+    for(let i=0;i<NB;i++){const y=H-1-rd.b[i]/100*(H-4);
+      if(i===0)g.moveTo(0,y);g.lineTo(i*bw,y);g.lineTo((i+1)*bw,y);}
+    g.stroke();
+  }
+  g.setLineDash([]);
+}
+function updateBeliefPanel(st){
+  if(!DIST)return;
+  if(!_bpBuilt)buildBeliefPanel();
+  const ri=roundIdx(rp);
+  DIST.items.forEach((it,k)=>{
+    const v=st.A[SCAL[it.cv]];
+    document.getElementById('bpv'+k).textContent=
+      (it.cv==='CL_max'?v.toFixed(3):v.toFixed(0)+' kg');
+    const ok=it.rounds[ri].ok;
+    document.getElementById('bpo'+k).textContent='consistent '+ok.toFixed(0)+'%';
+  });
+  if(ri!==_bpRound){_bpRound=ri;DIST.items.forEach((it,k)=>drawDist(k,it,ri));}
+}
+
 /* ---------- DOM ---------- */
 const fmt=v=>v.toFixed(2)+'%';
 const DCOL={aerodynamics:'var(--aero)',structures:'var(--struct)',weights:'var(--wts)'};
@@ -818,12 +923,7 @@ function updateDom(st){
   document.getElementById('roundLabel').textContent=
     `round ${r} / ${NR-1} · ${p<PH.pubEnd?'publish':p<PH.dotEnd?'sample':p<PH.msgStart?'verify':'broadcast'}`;
 
-  const cvs=document.getElementById('cvState');
-  cvs.innerHTML=[['W_empty · aero assumes',st.A.We,'kg'],
-                 ['W_structure · weights assumes',st.A.Wstr,'kg'],
-                 ['CL_max · structures assumes',st.A.CL,'']]
-    .map(([n,v,u])=>`<div class="drow"><span class="nm" style="width:auto;font-weight:400;color:var(--ink-2)">${n}</span>
-      <span style="margin-left:auto;font-weight:600;font-variant-numeric:tabular-nums">${v.toFixed(u?0:3)}${u?' '+u:''}</span></div>`).join('');
+  updateBeliefPanel(st);
 
   const key=r+':'+(p>PH.verdict?1:0);
   if(key===lastKey)return; lastKey=key;
@@ -861,11 +961,20 @@ cvEl.addEventListener('mousemove',ev=>{
   const st=stateAt(rp);
   const AR=AXX[0]+(x-MAP.x)/MAP.w*(AXX[1]-AXX[0]);
   const W0=AXY[1]-(y-MAP.y)/MAP.h*(AXY[1]-AXY[0]);
-  const q=evalPoint(AR,W0,st.sl.S_ref,st.sl.t_c,st.sl.sweep_c4,st.sl.P_SL,st.A,st.K);
+  const _ri=roundIdx(rp), T=ttOf(_ri), FD=DATA.rounds[_ri].field, FM=fieldOf(_ri);
+  const _u=(AR-AXX[0])/(AXX[1]-AXX[0]), _v=(AXY[1]-W0)/(AXY[1]-AXY[0]);
+  const ti=Math.min(T.w-1,Math.max(0,Math.floor(_u*T.w)));
+  const tj=Math.min(T.h-1,Math.max(0,Math.floor(_v*T.h)));
+  const to=tj*T.w+ti, gg=i=>(T.g[i][to]-128)/20, rq=i=>T.r[i][to]/16;
+  const fi=Math.min(FD.w-1,Math.max(0,Math.floor(_u*FD.w)));
+  const fj=Math.min(FD.h-1,Math.max(0,Math.floor(_v*FD.h)));
+  const q={gStall:gg(0),gLD:gg(1),gTip:gg(2),gSpar:gg(3),gClose:gg(4),gPwr:gg(5),
+           rWe:rq(0),rWstr:rq(1),rCL:rq(2)};
+  const admBit=(FM[fj*FD.w+fi]&16)!==0;
   const row=(n,g)=>`<tr><td>${n}</td><td class="${g<=0?'ok':'bad'}">${g<=0?'−':'+'}${Math.abs(g).toFixed(2)}</td></tr>`;
   const rr=(n,v)=>`<tr><td>${n}</td><td class="${v<=1?'ok':'bad'}">${v.toFixed(1)}×</td></tr>`;
   const g=planformGeom(AR,W0,st.sl.S_ref,st.sl.sweep_c4);
-  const adm=q.fA&&q.fS&&q.fW&&q.rWe<=1&&q.rWstr<=1&&q.rCL<=1;
+  const adm=admBit;
   tt.innerHTML=`<svg width="96" height="66" viewBox="-48 -30 96 66" style="display:block;margin:0 auto 2px">
       <path d="${planformSvgPath(g,76/g.b)}" fill="${adm?'var(--hot-core)':'var(--muted)'}"
         fill-opacity="${adm?.95:.5}" stroke="var(--surface-2)" stroke-width="1"/></svg>

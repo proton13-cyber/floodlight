@@ -1,0 +1,257 @@
+{
+  "schema_version": "1.0.0",
+  "publication_id": "structures-r2-c44c2a7e",
+  "supersedes": null,
+  "discipline": "structures",
+  "round": 2,
+  "agent": {
+    "id": "structures-agent",
+    "model": "claude-opus-5",
+    "prompt_version": "struct-v0.4-beam",
+    "run_id": "run_2026-08-15T23:16:44Z_beam"
+  },
+  "design_space_ref": {
+    "id": "uav-medium",
+    "version": 1,
+    "hash": "sha256:PLACEHOLDER_COMPUTED_BY_TOOLING"
+  },
+  "mission_ref": {
+    "id": "ref-mission-A",
+    "hash": "sha256:PLACEHOLDER"
+  },
+  "created_at": "2026-08-15T23:16:44Z",
+  "status": "published",
+  "validity": {
+    "box": {
+      "S_ref": [
+        8.01414244733134,
+        24.947736197331338
+      ],
+      "AR": [
+        8.004477600676047,
+        10.540905294585617
+      ],
+      "t_c": [
+        0.08047001476654111,
+        0.1798300147665411
+      ],
+      "sweep_c4": [
+        0.024512060658872237,
+        14.980780282233217
+      ],
+      "W0": [
+        500.0,
+        1000.0
+      ],
+      "P_SL": [
+        40.0,
+        160.0
+      ]
+    },
+    "expression": "(0.0199535 * (S_ref)**-0.0007 * (AR)**1.0310 * (t_c)**-1.0263) <= 3.0",
+    "extrapolation_policy": "reject",
+    "note": "Box clipped to where the stiffness factor stays under 3.0x strength-sized cap area -- the bound this publication already declares as a constraint, and beyond which the thin-cap no-buckling idealisation stops holding. AR upper bound cut from 23.9 to 10.5, retaining 16% of the sampled box volume. r1 instead inherited AR<=22 from ASWING convergence failures, which is a different and weaker justification. IMPORTANT: the trustworthy region is a power-law surface, not a rectangle, so this box is conservative -- valid designs at high AR with thick sections are excluded by the corner. validity.expression carries the exact bound for an engine that can use it."
+  },
+  "active_subspace": [
+    {
+      "variable": "AR",
+      "sensitivity": 1.0,
+      "method": "loglog_regression"
+    },
+    {
+      "variable": "t_c",
+      "sensitivity": 0.62,
+      "method": "loglog_regression"
+    },
+    {
+      "variable": "W0",
+      "sensitivity": 0.51,
+      "method": "loglog_regression"
+    },
+    {
+      "variable": "S_ref",
+      "sensitivity": 0.34,
+      "method": "loglog_regression"
+    },
+    {
+      "variable": "sweep_c4",
+      "sensitivity": 0.04,
+      "method": "loglog_regression"
+    },
+    {
+      "variable": "P_SL",
+      "sensitivity": 0.0,
+      "method": "analytic"
+    }
+  ],
+  "conditioning": [
+    {
+      "coupling_variable": "n_z_ult",
+      "assumed_value": 5.7,
+      "units": "g",
+      "source": {
+        "type": "requirement",
+        "publication_id": null,
+        "note": "3.8 limit x 1.5, frozen by REQ set. Not negotiated."
+      },
+      "drift_tolerance": {
+        "kind": "absolute",
+        "value": 0.01
+      }
+    },
+    {
+      "coupling_variable": "CL_max",
+      "assumed_value": 1.6,
+      "units": "-",
+      "source": {
+        "type": "seed",
+        "publication_id": null,
+        "note": "RETAINED FOR CONTRACT SHAPE, BUT INERT UNDER THIS MODEL. The spanload comes from a linear vortex lattice, whose loading SHAPE does not change with CL, and the load MAGNITUDE is n_z_ult*W0 with n_z_ult frozen by requirement. So no output of this publication depends on CL_max and this residual will read consistent whatever aero publishes. A stall-limited V-n corner with a nonlinear spanload would restore the dependence."
+      },
+      "drift_tolerance": {
+        "kind": "relative",
+        "value": 0.1
+      }
+    }
+  ],
+  "provides": [
+    {
+      "coupling_variable": "W_structure",
+      "units": "kg",
+      "surrogate": {
+        "form": "analytic",
+        "inputs": [
+          "W0",
+          "S_ref",
+          "AR",
+          "t_c",
+          "sweep_c4",
+          "n_z_ult"
+        ],
+        "expression": "(3.15392e-05 * (n_z_ult*W0)**0.7907 * (S_ref)**0.3556 * (AR)**1.8876 * (t_c)**-1.5613 * (cos(radians(sweep_c4)))**-0.7581)",
+        "fit": {
+          "n_train": 1000,
+          "r2": 0.9917,
+          "rmse": 33.486,
+          "cv": "none (direct log-log lstsq)"
+        },
+        "sigma": {
+          "form": "constant",
+          "value": 33.49
+        }
+      }
+    }
+  ],
+  "constraints": [
+    {
+      "id": "STR.TIP_DEFL",
+      "description": "Buildability bound on how stiffness-critical the wing may be. REQUIREMENT REQ-DEFL IS NOT A CONSTRAINT UNDER THIS MODEL -- it is a SIZING CONDITION. The box is stiffened until it meets the 10% limit, and that mass is carried in W_structure, so deflection is satisfied by construction and can never be violated. What CAN fail is needing so much cap area that the thin-cap beam idealisation and the no-buckling assumption stop holding. That is what this constrains: the stiffness factor, capped at 3.0x strength-sized cap area. r1 published deflection and mass as INDEPENDENT expressions, which let a design be simultaneously light and stiff in a way the physics does not allow. Restoring the coupling is what forces this reformulation.",
+      "requirement_ref": "REQ-DEFL",
+      "sense": "le_zero",
+      "normalization": {
+        "kind": "limit_relative",
+        "scale": 3.0,
+        "description": "g = (lambda - 3.0)/3.0 on the cap-area multiplier."
+      },
+      "criticality": "hard",
+      "surrogate": {
+        "form": "analytic",
+        "inputs": [
+          "S_ref",
+          "AR",
+          "t_c"
+        ],
+        "expression": "((0.0199535 * (S_ref)**-0.0007 * (AR)**1.0310 * (t_c)**-1.0263) - 3.0) / 3.0",
+        "fit": {
+          "n_train": 1000,
+          "r2": 0.9996,
+          "rmse": 0.0217,
+          "cv": "none (direct log-log lstsq)"
+        },
+        "sigma": {
+          "form": "constant",
+          "value": 0.05
+        }
+      },
+      "reporting": {
+        "physical_expression": "(0.0199535 * (S_ref)**-0.0007 * (AR)**1.0310 * (t_c)**-1.0263)",
+        "limit": 3.0,
+        "units": "- (cap-area multiplier over strength sizing)",
+        "note": "Strength-sized tip deflection, for reference and for the write-up, is (0.00199535 * (S_ref)**-0.0007 * (AR)**1.0310 * (t_c)**-1.0263) as a fraction of semispan; the as-built wing meets 0.1 by construction."
+      }
+    },
+    {
+      "id": "STR.SPAR_DEPTH",
+      "description": "Minimum root box depth for buildability and inspection access. Closed-form for the pinned planform, so no fit is involved -- r1 published fit statistics for an expression that was always exact.",
+      "requirement_ref": null,
+      "sense": "le_zero",
+      "normalization": {
+        "kind": "absolute_scale",
+        "scale": 0.02,
+        "description": "g = (0.055 - root box depth)/0.02, m."
+      },
+      "criticality": "hard",
+      "surrogate": {
+        "form": "analytic",
+        "inputs": [
+          "S_ref",
+          "AR",
+          "t_c"
+        ],
+        "expression": "(0.055 - (0.92 * t_c * 1.33333*(S_ref/AR)**0.5)) / 0.02",
+        "fit": {
+          "n_train": 1000,
+          "r2": 1.0,
+          "rmse": 0.0,
+          "cv": "exact -- closed form, not fitted"
+        }
+      },
+      "reporting": {
+        "physical_expression": "(0.92 * t_c * 1.33333*(S_ref/AR)**0.5)",
+        "limit": 0.055,
+        "units": "m"
+      }
+    }
+  ],
+  "objectives": [
+    {
+      "id": "STR.MASS",
+      "direction": "minimize",
+      "units": "kg",
+      "surrogate": {
+        "form": "analytic",
+        "inputs": [
+          "W0",
+          "S_ref",
+          "AR",
+          "t_c",
+          "sweep_c4",
+          "n_z_ult"
+        ],
+        "expression": "(3.15392e-05 * (n_z_ult*W0)**0.7907 * (S_ref)**0.3556 * (AR)**1.8876 * (t_c)**-1.5613 * (cos(radians(sweep_c4)))**-0.7581)"
+      }
+    }
+  ],
+  "evidence": {
+    "tool": {
+      "name": "AVL spanload + fully-stressed box beam",
+      "version": "3.32 / floodlight structures.beam",
+      "fidelity": "low"
+    },
+    "method_ref": "Spanwise loading from an AVL vortex-lattice solve of the same planform the aero discipline uses. Shear and bending moment integrated outboard-in; spar caps sized fully-stressed against 7075-T6 at 340 MPa with a minimum gauge; inertia relief iterated to convergence; tip deflection from moment-area integration of the curvature; mass from cap volume with a 1.9 non-optimum factor, a 22% carry-through allowance and a 38 kg fuselage-frame allowance. Where the strength-sized box exceeds the deflection limit, cap area is scaled until it does not, and that mass is what is published.",
+    "n_evaluations": 1000,
+    "doe": {
+      "type": "scrambled_halton",
+      "seed": 20260811
+    },
+    "input_deck_refs": [
+      {
+        "uri": "structures/beam.py::size_wing_box",
+        "sha256": "sha256:PLACEHOLDER",
+        "media_type": "text/x-python"
+      }
+    ],
+    "convergence_notes": "No failures. 100% of sampled designs are stiffness-critical rather than strength-critical, i.e. the deflection requirement sets the mass, and 42% exceed the 3.0x cap-area bound where this model stops being trustworthy. r1 modelled mass and deflection as independent expressions; they are the same sizing problem.",
+    "known_limitations": "No torsion, no aeroelastic feedback (the spanload is rigid-wing), no buckling -- caps are sized on stress alone, which is optimistic for the compression cap and increasingly so as the stiffness factor rises. No gust cases, no landing loads, no fatigue, no cut-outs. The non-optimum factor of 1.9 is the largest single piece of judgement in the model and it is a constant where a real one varies with size. Outputs are insensitive to CL_max under a linear spanload -- see the conditioning note. Material is aluminium 7075-T6 throughout; the carbon-cap variant is a separate publication, not a coefficient."
+  }
+}
