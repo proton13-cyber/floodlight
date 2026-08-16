@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 """
-Build docs/writeup.html -- the explainer, for readers who are not aerospace engineers.
+Build docs/explainer.html -- the plain-language companion to the campaign write-up.
+
+This is a SECOND document, not a replacement. docs/writeup.html is the technical
+campaign write-up (built by build_report.py) and is left alone. This one covers the
+same project for readers who are not aerospace engineers.
 
 Audience: an undergraduate who has taken some physics and can read a graph, but has
 never sized an aircraft and does not know what a vortex lattice is. Every technical
@@ -38,7 +42,7 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--figs", default=str(ROOT / "docs/figs"),
                     help="dashboard screenshots; committed copies live in docs/figs")
-    ap.add_argument("--out", default="docs/writeup.html")
+    ap.add_argument("--out", default="docs/explainer.html")
     args = ap.parse_args()
     F = Path(args.figs)
 

@@ -9,9 +9,17 @@ conditioned on assumed coupling values); an orchestrator intersects those region
 deterministic witness verifies both feasibility **and** self-consistency of the assumptions
 behind them.
 
-**[▶ Live interactive timelapse](https://proton13-cyber.github.io/floodlight/timelapse.html)** · **[Write-up](https://proton13-cyber.github.io/floodlight/writeup.html)** · **[PDF](https://proton13-cyber.github.io/floodlight/writeup.pdf)**
+**[▶ Live interactive timelapse](https://proton13-cyber.github.io/floodlight/timelapse.html)**
 
-_Links go live once GitHub Pages is enabled: Settings → Pages → Source `main`, folder `/docs`._
+| Document | Read online | Download |
+|---|---|---|
+| **Campaign write-up** — the technical account: the contract, the agents, all 12 rounds | [HTML](https://proton13-cyber.github.io/floodlight/writeup.html) | [PDF · 26 pp](https://github.com/proton13-cyber/floodlight/raw/main/docs/writeup.pdf) |
+| **Plain-language explainer** — the same project for readers who are not aerospace engineers, including §4 on the AVL / NeuralFoil / beam-sizing toolchain | [HTML](https://proton13-cyber.github.io/floodlight/explainer.html) | [PDF · 16 pp](https://github.com/proton13-cyber/floodlight/raw/main/docs/explainer.pdf) |
+| **Design shortlist** — 20 admissible aircraft from the final round, drawn to scale, with active constraints and coupling residuals | — | [PDF · 5 pp](https://github.com/proton13-cyber/floodlight/raw/main/docs/design_shortlist.pdf) |
+
+The *Read online* links go live once GitHub Pages is enabled (Settings → Pages → Source
+`main`, folder `/docs`). The *Download* links are served straight from the repository and
+work right now.
 
 Until then, the timelapse renders through the htmlpreview proxy — no setup, works today:
 
@@ -25,7 +33,7 @@ https://htmlpreview.github.io/?https://github.com/proton13-cyber/floodlight/blob
 git clone https://github.com/proton13-cyber/floodlight.git
 cd floodlight
 pip install numpy
-./build.sh                      # re-runs the campaign and rebuilds the viz
+python build.py                 # re-runs the campaign and rebuilds the viz
 open docs/timelapse.html        # or just double-click it
 ```
 
@@ -37,8 +45,15 @@ files directly from disk and they work.
 ```
 mdao_contract.py                 validator + intersection/fixed-point engine (numpy only)
 make_timelapse_data.py           the 12-round campaign simulator
-build_report.py                  assembles the write-up
-build.sh                         regenerate everything
+build_report.py                  assembles the technical campaign write-up
+build_writeup.py                 assembles the plain-language explainer
+report_designs.py                selects 20 diverse admissible designs from the final round
+make_design_report.py            draws them to scale as docs/design_shortlist.pdf
+aero/                            AVL wrapper + verification + NeuralFoil strip coupling
+structures/                      fully-stressed wing-box beam sizing
+weights/                         component weight build-up
+configuration/                   shared geometry, hash-gated across disciplines
+build.py                         regenerate everything (campaign + viz + explainer)
 schemas/                         the region-publication JSON Schema — the contract
 spaces/                          canonical design vector + coupling registry
 publications/                    the three discipline publications
@@ -258,8 +273,31 @@ a filter.
 
 ## Honest caveat on the physics
 
-Every coefficient in the example publications is illustrative — plausible in form
-and magnitude, fitted to nothing. `known_limitations` on each publication says so.
-The point of the worked example is to exercise the *contract*, not to size an
-aircraft. Swap in real ASWING and real group weights and the machinery is
-unchanged, which is the whole idea.
+This started as illustrative coefficients — plausible in form and magnitude, fitted to
+nothing. Two of the three disciplines have since been replaced with real tools, and the
+published surrogates are now fits to those runs:
+
+- **Aerodynamics** runs **AVL** (vortex lattice) coupled strip-by-strip to **NeuralFoil**
+  for 2-D section polars. The AVL harness is benchmarked against results published outside
+  this repository — Warren 12 (`CL_alpha = 2.743/rad`, `Cm_alpha = -3.10/rad`, in its
+  nonstandard reference convention) and Prandtl's elliptic-wing `e = 1.0` — and it
+  reproduces the published lift slope to 0.14%. It publishes a drag *polar* `CDp(CL)`, and
+  a `CL_max` derived from the first strip to reach its own section maximum, which also
+  reports *where* the wing stalls.
+- **Structures** sizes a fully-stressed wing box against the AVL span loading. A test
+  asserts the non-obvious consequence: for a fully-stressed beam the bending moment cancels
+  out of the deflection, so tip deflection is independent of load factor.
+- **Weights** is still a component build-up — a fuselage sized from planform and wetted
+  area, propulsion from installed power, plus systems and gear. Correlation-based, and
+  labelled as such.
+
+What is still estimated rather than computed is listed in each publication's
+`known_limitations` and in §4 of the plain-language explainer: non-wing parasite drag (the
+AVL deck is a wing — no fuselage, tail, nacelle or gear), and on the structural side no
+torsion, no aeroelastic feedback, no buckling, no gust or landing cases. The aero and
+weights estimates of non-wing drag disagree by roughly a quarter to a third; that gap is
+left visible rather than reconciled away.
+
+The point of the worked example is still to exercise the *contract*. Swapping AVL for
+ASWING would change none of the machinery, which is the whole idea — but the numbers the
+contract is now checking are ones a tool produced.
