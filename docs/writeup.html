@@ -51,6 +51,30 @@ strong{font-weight:650}
 discipline agents under a publish–intersect–verify protocol. Write-up of the concept, the
 machinery, and what every round did. August 2026.</div>
 
+<div style="border:1px solid #b8860b;border-left:5px solid #b8860b;
+  background:rgba(224,138,0,.10);border-radius:0 8px 8px 0;padding:14px 18px;
+  margin:26px 0 8px;font-size:14.5px;line-height:1.55">
+  <div style="font-size:11.5px;letter-spacing:.09em;text-transform:uppercase;
+    font-weight:700;color:#8a6400;margin-bottom:6px">Archived &mdash; version 1</div>
+  <p style="margin:0 0 10px">This is the <strong>original</strong> campaign write-up, kept
+  as a snapshot of the project at its first milestone. It describes the campaign as it ran
+  on <strong>illustrative placeholder physics</strong> &mdash; hand-written surrogates
+  fitted to nothing.</p>
+  <p style="margin:0 0 10px">The project has since replaced two of the three disciplines
+  with real tools: aerodynamics now runs <strong>AVL</strong> (vortex lattice) coupled
+  strip-by-strip to <strong>NeuralFoil</strong> for section polars, and structures now sizes
+  a <strong>fully-stressed wing box</strong> against the AVL span loading. Shared geometry is
+  hash-gated, and each discipline's assumptions about the others are linear models refit
+  every round rather than single numbers. Consequently the numbers below no longer match the
+  live campaign &mdash; the round-6 structural mass cut is now 53%, not 25%, and the best
+  design is 500&nbsp;kg, not 788&nbsp;kg.</p>
+  <p style="margin:0"><strong>For current numbers and the toolchain, read
+  <a href="explainer.html" style="color:#8a6400">Designing an aircraft when nobody has the
+  whole picture</a></strong> &mdash; in particular &sect;4, on what AVL, NeuralFoil and the
+  beam model each do and do not cover. The concept, the contract, and the five ideas the
+  schema encodes, below, are all still accurate.</p>
+</div>
+
 <h2>1 · The concept</h2>
 
 <p>Classical multidisciplinary design optimization puts one optimizer in charge of everything:

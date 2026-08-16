@@ -11,17 +11,22 @@
   h1{font-size:28px;line-height:1.2;letter-spacing:-.015em;margin:0 0 8px}
   .sub{color:#bdb6cc;font-size:15px;margin-bottom:30px}
   h2{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:#8b839c;
-    font-weight:700;margin:28px 0 12px}
+    font-weight:700;margin:30px 0 12px}
   a.card{display:block;text-decoration:none;color:inherit;background:#14111f;
-    border:1px solid rgba(244,241,250,.13);border-radius:14px;padding:18px 20px;margin-bottom:12px;
+    border:1px solid rgba(244,241,250,.13);border-radius:14px;padding:18px 20px;
     transition:border-color .15s,transform .15s}
   a.card:hover{border-color:#fdc426;transform:translateY(-1px)}
   a.card .t{font-size:17px;font-weight:650;display:flex;align-items:center;gap:9px}
   a.card .t .dot{width:9px;height:9px;border-radius:50%;background:#fdc426;flex:none}
   a.card .d{color:#bdb6cc;font-size:13.5px;margin-top:5px}
-  a.card .pdf{color:#8b839c;font-size:12.5px;margin-top:8px}
-  a.card .pdf b{color:#fdc426;font-weight:600}
-  .meta{color:#8b839c;font-size:12.5px;margin-top:28px;line-height:1.6;
+  a.card.arch{background:#100e18;border-style:dashed}
+  a.card.arch .t{color:#cfc9dc}
+  .alt{font-size:12.5px;color:#8b839c;margin:7px 0 16px;padding-left:2px}
+  .alt a{color:#fdc426;text-decoration:none;font-weight:600}
+  .alt a:hover{text-decoration:underline}
+  .tag{font-size:10px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;
+    color:#0b0910;background:#8b839c;border-radius:5px;padding:2px 7px}
+  .meta{color:#8b839c;font-size:12.5px;margin-top:30px;line-height:1.6;
     border-top:1px solid rgba(244,241,250,.10);padding-top:16px}
   code{font:.9em ui-monospace,Menlo,Consolas,monospace;background:rgba(244,241,250,.08);
     padding:1px 5px;border-radius:4px}
@@ -41,24 +46,16 @@ for a medium fixed-wing UAV.</div>
   constraint margins.</div>
 </a>
 
-<h2>Two write-ups, same project</h2>
-
-<a class="card" href="writeup.html">
-  <div class="t"><span class="dot"></span>Campaign write-up</div>
-  <div class="d">The technical account: the contract and the five ideas it encodes, the
-  agents and scaffolding, the design criteria, and all 12 rounds analyzed round by round
-  with snapshots. Ends with what is real computation and what is not.</div>
-  <div class="pdf">Also as <b>PDF, 26 pages</b> → <a href="writeup.pdf" style="color:#fdc426">writeup.pdf</a></div>
-</a>
+<h2>Read this</h2>
 
 <a class="card" href="explainer.html">
   <div class="t"><span class="dot"></span>Plain-language explainer</div>
-  <div class="d">The same project for readers who are not aerospace engineers. Why coupling
-  makes design hard, why a region beats a point, and §4 on the toolchain behind the numbers
-  — AVL vortex lattice, NeuralFoil section polars, fully-stressed beam sizing, and what each
+  <div class="d">The project for readers who are not aerospace engineers. Why coupling makes
+  design hard, why a region beats a point, and §4 on the toolchain behind the numbers —
+  AVL vortex lattice, NeuralFoil section polars, fully-stressed beam sizing, and what each
   one still cannot do.</div>
-  <div class="pdf">Also as <b>PDF, 16 pages</b> → <a href="explainer.pdf" style="color:#fdc426">explainer.pdf</a></div>
 </a>
+<div class="alt">Download: <a href="explainer.pdf">explainer.pdf</a> · 16 pages A4</div>
 
 <h2>Results</h2>
 
@@ -67,8 +64,20 @@ for a medium fixed-wing UAV.</div>
   <div class="d">Twenty admissible aircraft from the final round, drawn to scale — planform,
   span, wing loading, active constraints and coupling residuals for each. The spread across
   the shortlist <em>is</em> the trade study.</div>
-  <div class="pdf"><b>PDF, 5 pages</b></div>
 </a>
+<div class="alt">PDF · 5 pages A4</div>
+
+<h2>Archive</h2>
+
+<a class="card arch" href="writeup.html">
+  <div class="t"><span class="dot"></span>Campaign write-up <span class="tag">archived · v1</span></div>
+  <div class="d">The original technical account: the contract and the five ideas it encodes,
+  the agents and scaffolding, the design criteria, and all 12 rounds analyzed one by one.
+  Written before AVL, NeuralFoil and the beam model went in, so it describes the campaign
+  running on illustrative placeholder physics — the structure and the contract discussion
+  still hold, the numbers do not.</div>
+</a>
+<div class="alt">Download: <a href="writeup.pdf">writeup.pdf</a> · 27 pages A4</div>
 
 <div class="meta">
   Source, contract schema, and the campaign engine are in the repository root. Regenerate
