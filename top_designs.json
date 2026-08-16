@@ -1,8 +1,8 @@
 {
   "round": 11,
   "publications": [
-    "aerodynamics-r3-557824ce",
-    "structures-r2-41c9906b",
+    "aerodynamics-r3-cb659d5e",
+    "structures-r2-c44c2a7e",
     "weights-r2-3ba60b4e"
   ],
   "assumed": {
@@ -71,8 +71,8 @@
       "power_loading": 5.672066146053106,
       "root_box_depth_mm": 167.3883387031834,
       "margins": {
-        "aerodynamics:AER.V_STALL": -0.28287511586642405,
-        "aerodynamics:AER.LD_CRUISE": -0.24191092564713212,
+        "aerodynamics:AER.V_STALL": -0.28288111347316963,
+        "aerodynamics:AER.LD_CRUISE": -0.24191294962966495,
         "structures:STR.TIP_DEFL": -0.22183535985619773,
         "structures:STR.SPAR_DEPTH": -5.619396011616831,
         "weights:WTS.CLOSURE": -0.0938928797712144,
@@ -81,13 +81,13 @@
       "active": [],
       "couplings": {
         "W_empty": 273.0552456349802,
-        "CL_max": 1.6285148810584682,
-        "W_structure": 31.28411327062792
+        "CL_max": 1.6285421212633024,
+        "W_structure": 31.284014079735066
       },
       "residuals": {
         "W_empty": 0.15290840047895565,
-        "CL_max": 0.1782180066154257,
-        "W_structure": 0.827936750539179
+        "CL_max": 0.17838825789563972,
+        "W_structure": 0.8279369079763479
       }
     },
     {
@@ -106,8 +106,8 @@
       "power_loading": 4.362555757204756,
       "root_box_depth_mm": 217.00136911662963,
       "margins": {
-        "aerodynamics:AER.V_STALL": -0.3797907079127062,
-        "aerodynamics:AER.LD_CRUISE": -0.15897967285949402,
+        "aerodynamics:AER.V_STALL": -0.3797953724287765,
+        "aerodynamics:AER.LD_CRUISE": -0.15898165193081373,
         "structures:STR.TIP_DEFL": -0.30679700149864486,
         "structures:STR.SPAR_DEPTH": -8.100041330660343,
         "weights:WTS.CLOSURE": -0.026956670434072853,
@@ -118,13 +118,13 @@
       ],
       "couplings": {
         "W_empty": 306.5260622421233,
-        "CL_max": 1.6645993116489124,
-        "W_structure": 29.1123577337179
+        "CL_max": 1.6646243504154519,
+        "W_structure": 29.11226542869613
       },
       "residuals": {
         "W_empty": 0.2508277835984084,
-        "CL_max": 0.4037456978057019,
-        "W_structure": 0.02537899777672131
+        "CL_max": 0.40390219009657363,
+        "W_structure": 0.02537918845499627
       }
     },
     {
@@ -143,8 +143,8 @@
       "power_loading": 6.244539830921605,
       "root_box_depth_mm": 192.98120558274138,
       "margins": {
-        "aerodynamics:AER.V_STALL": -0.27413216137290586,
-        "aerodynamics:AER.LD_CRUISE": -0.27390949100853695,
+        "aerodynamics:AER.V_STALL": -0.27413002965600725,
+        "aerodynamics:AER.LD_CRUISE": -0.27391183571884187,
         "structures:STR.TIP_DEFL": -0.2641750171056194,
         "structures:STR.SPAR_DEPTH": -6.899036156486371,
         "weights:WTS.CLOSURE": -0.11950727029112149,
@@ -153,13 +153,13 @@
       "active": [],
       "couplings": {
         "W_empty": 260.25255813746253,
-        "CL_max": 1.6093361944800446,
-        "W_structure": 30.54581500866431
+        "CL_max": 1.609326741976803,
+        "W_structure": 30.54571815865493
       },
       "residuals": {
         "W_empty": 0.006038500231914652,
-        "CL_max": 0.058351215500278275,
-        "W_structure": 0.4153579786926589
+        "CL_max": 0.058292137355017704,
+        "W_structure": 0.4153581367813339
       }
     },
     {
@@ -178,8 +178,8 @@
       "power_loading": 5.3610210845513695,
       "root_box_depth_mm": 258.59591516165233,
       "margins": {
-        "aerodynamics:AER.V_STALL": -0.4554050516742941,
-        "aerodynamics:AER.LD_CRUISE": -0.04504965697560085,
+        "aerodynamics:AER.V_STALL": -0.45541003314761414,
+        "aerodynamics:AER.LD_CRUISE": -0.045051350147487255,
         "structures:STR.TIP_DEFL": -0.3254732121911028,
         "structures:STR.SPAR_DEPTH": -10.179763433593223,
         "weights:WTS.CLOSURE": -0.05420841505231664,
@@ -190,13 +190,13 @@
       ],
       "couplings": {
         "W_empty": 292.9198110713051,
-        "CL_max": 1.6833746146534532,
-        "W_structure": 30.99584061234067
+        "CL_max": 1.6834054111227004,
+        "W_structure": 30.99574233545878
       },
       "residuals": {
         "W_empty": 0.27956464589062296,
-        "CL_max": 0.5210913415840818,
-        "W_structure": 0.4708377255516998
+        "CL_max": 0.5212838195168767,
+        "W_structure": 0.47083792279861414
       }
     },
     {
@@ -215,8 +215,8 @@
       "power_loading": 4.846519522823364,
       "root_box_depth_mm": 259.4123466098791,
       "margins": {
-        "aerodynamics:AER.V_STALL": -0.42395639896891335,
-        "aerodynamics:AER.LD_CRUISE": -0.09342335158711146,
+        "aerodynamics:AER.V_STALL": -0.42395790018454693,
+        "aerodynamics:AER.LD_CRUISE": -0.09342533335556553,
         "structures:STR.TIP_DEFL": -0.30455342300237964,
         "structures:STR.SPAR_DEPTH": -10.220584903950625,
         "weights:WTS.CLOSURE": -0.05062983590975176,
@@ -225,13 +225,13 @@
       "active": [],
       "couplings": {
         "W_empty": 294.71957057816405,
-        "CL_max": 1.6476487743299801,
-        "W_structure": 33.115110010327335
+        "CL_max": 1.6476573621721626,
+        "W_structure": 33.1150050139894
       },
       "residuals": {
         "W_empty": 0.09600863813796187,
-        "CL_max": 0.2978048395623753,
-        "W_structure": 0.32928674663939805
+        "CL_max": 0.2978585135760159,
+        "W_structure": 0.3292869315426929
       }
     },
     {
@@ -250,8 +250,8 @@
       "power_loading": 4.6570154057655655,
       "root_box_depth_mm": 184.7915713395081,
       "margins": {
-        "aerodynamics:AER.V_STALL": -0.263970871517802,
-        "aerodynamics:AER.LD_CRUISE": -0.2918239951906793,
+        "aerodynamics:AER.V_STALL": -0.2639751290811296,
+        "aerodynamics:AER.LD_CRUISE": -0.2918260827861025,
         "structures:STR.TIP_DEFL": -0.23419871658790237,
         "structures:STR.SPAR_DEPTH": -6.489555468028992,
         "weights:WTS.CLOSURE": -0.06983538790967947,
@@ -260,13 +260,13 @@
       "active": [],
       "couplings": {
         "W_empty": 285.134252741002,
-        "CL_max": 1.6288861419391958,
-        "W_structure": 32.12721396577787
+        "CL_max": 1.6289049866990262,
+        "W_structure": 32.12711210170998
       },
       "residuals": {
         "W_empty": 0.03809819622987543,
-        "CL_max": 0.1805383871199731,
-        "W_structure": 0.8670553924911284
+        "CL_max": 0.180656166868913,
+        "W_structure": 0.8670555444536541
       }
     },
     {
@@ -285,8 +285,8 @@
       "power_loading": 5.429827721408677,
       "root_box_depth_mm": 227.57161476452174,
       "margins": {
-        "aerodynamics:AER.V_STALL": -0.35105872211193173,
-        "aerodynamics:AER.LD_CRUISE": -0.18352090133391652,
+        "aerodynamics:AER.V_STALL": -0.3510573632660113,
+        "aerodynamics:AER.LD_CRUISE": -0.1835232851805896,
         "structures:STR.TIP_DEFL": -0.2833685516329443,
         "structures:STR.SPAR_DEPTH": -8.628552291774245,
         "weights:WTS.CLOSURE": -0.08257875846970733,
@@ -295,13 +295,13 @@
       "active": [],
       "couplings": {
         "W_empty": 278.7848515949301,
-        "CL_max": 1.5575626233442919,
-        "W_structure": 32.88693450320868
+        "CL_max": 1.5575561004706793,
+        "W_structure": 32.88683023033484
       },
       "residuals": {
         "W_empty": 0.08158132347918169,
-        "CL_max": 0.2652336040981765,
-        "W_structure": 0.4412844018725127
+        "CL_max": 0.2652743720582551,
+        "W_structure": 0.4412845663955653
       }
     },
     {
@@ -320,8 +320,8 @@
       "power_loading": 6.780398733940785,
       "root_box_depth_mm": 171.1483734453398,
       "margins": {
-        "aerodynamics:AER.V_STALL": -0.14702633145208083,
-        "aerodynamics:AER.LD_CRUISE": -0.2990060450693523,
+        "aerodynamics:AER.V_STALL": -0.1470243047340742,
+        "aerodynamics:AER.LD_CRUISE": -0.29900872254462135,
         "structures:STR.TIP_DEFL": -0.2819156189430023,
         "structures:STR.SPAR_DEPTH": -5.807397278720305,
         "weights:WTS.CLOSURE": -0.14337066754331806,
@@ -330,13 +330,13 @@
       "active": [],
       "couplings": {
         "W_empty": 248.38509243458103,
-        "CL_max": 1.5034100609724579,
-        "W_structure": 27.128430166303932
+        "CL_max": 1.5034029166079959,
+        "W_structure": 27.128344151616965
       },
       "residuals": {
         "W_empty": 0.1405276061921336,
-        "CL_max": 0.6036871189221388,
-        "W_structure": 0.23591096394417987
+        "CL_max": 0.6037317712000264,
+        "W_structure": 0.2359108132412707
       }
     },
     {
@@ -355,8 +355,8 @@
       "power_loading": 6.244492742663636,
       "root_box_depth_mm": 198.5943631902543,
       "margins": {
-        "aerodynamics:AER.V_STALL": -0.34000246308735427,
-        "aerodynamics:AER.LD_CRUISE": -0.22024295298745264,
+        "aerodynamics:AER.V_STALL": -0.3400032339890223,
+        "aerodynamics:AER.LD_CRUISE": -0.22024509881283683,
         "structures:STR.TIP_DEFL": -0.2409222808197271,
         "structures:STR.SPAR_DEPTH": -7.179693335217317,
         "weights:WTS.CLOSURE": -0.10758930133163874,
@@ -365,13 +365,13 @@
       "active": [],
       "couplings": {
         "W_empty": 266.2809166575198,
-        "CL_max": 1.6451041265234703,
-        "W_structure": 33.31998470274306
+        "CL_max": 1.6451079696158042,
+        "W_structure": 33.3198790568197
       },
       "residuals": {
         "W_empty": 0.1125766021237372,
-        "CL_max": 0.2819007907716886,
-        "W_structure": 0.9377251074743922
+        "CL_max": 0.2819248100987756,
+        "W_structure": 0.9377252658057222
       }
     },
     {
@@ -390,8 +390,8 @@
       "power_loading": 5.7691755396688205,
       "root_box_depth_mm": 266.22733445696235,
       "margins": {
-        "aerodynamics:AER.V_STALL": -0.4071398010230393,
-        "aerodynamics:AER.LD_CRUISE": -0.11340529233957393,
+        "aerodynamics:AER.V_STALL": -0.4071471079274972,
+        "aerodynamics:AER.LD_CRUISE": -0.11340732067786415,
         "structures:STR.TIP_DEFL": -0.33049818936815023,
         "structures:STR.SPAR_DEPTH": -10.561333444431309,
         "weights:WTS.CLOSURE": -0.08774945270002732,
@@ -400,13 +400,13 @@
       "active": [],
       "couplings": {
         "W_empty": 276.21292512297504,
-        "CL_max": 1.637209311479802,
-        "W_structure": 30.900054329663906
+        "CL_max": 1.6372496688969553,
+        "W_structure": 30.89995635648655
       },
       "residuals": {
         "W_empty": 0.06950565905733212,
-        "CL_max": 0.2325581967487625,
-        "W_structure": 0.981124587939316
+        "CL_max": 0.2328104306059703,
+        "W_structure": 0.981124373314251
       }
     },
     {
@@ -425,8 +425,8 @@
       "power_loading": 8.565372967819428,
       "root_box_depth_mm": 164.6933447401396,
       "margins": {
-        "aerodynamics:AER.V_STALL": -0.1317571739286269,
-        "aerodynamics:AER.LD_CRUISE": -0.2940548424935881,
+        "aerodynamics:AER.V_STALL": -0.1317602223018304,
+        "aerodynamics:AER.LD_CRUISE": -0.29405669283232294,
         "structures:STR.TIP_DEFL": -0.2900881313883056,
         "structures:STR.SPAR_DEPTH": -5.484646650338886,
         "weights:WTS.CLOSURE": -0.17810826855375342,
@@ -435,13 +435,13 @@
       "active": [],
       "couplings": {
         "W_empty": 231.0296877080041,
-        "CL_max": 1.604544076394471,
-        "W_structure": 25.09573733904269
+        "CL_max": 1.6045553434611923,
+        "W_structure": 25.095657769307987
       },
       "residuals": {
         "W_empty": 0.2257053398619749,
-        "CL_max": 0.02840047746544283,
-        "W_structure": 0.9577150238007948
+        "CL_max": 0.028470896632451503,
+        "W_structure": 0.957714853439493
       }
     },
     {
@@ -460,8 +460,8 @@
       "power_loading": 7.623196732816515,
       "root_box_depth_mm": 161.46684435869028,
       "margins": {
-        "aerodynamics:AER.V_STALL": -0.24508547249193566,
-        "aerodynamics:AER.LD_CRUISE": -0.24919635903119156,
+        "aerodynamics:AER.V_STALL": -0.2450860021292273,
+        "aerodynamics:AER.LD_CRUISE": -0.24919851131170034,
         "structures:STR.TIP_DEFL": -0.2365920728784523,
         "structures:STR.SPAR_DEPTH": -5.323322034578971,
         "weights:WTS.CLOSURE": -0.14267198811353068,
@@ -470,13 +470,13 @@
       "active": [],
       "couplings": {
         "W_empty": 248.7589041093218,
-        "CL_max": 1.6154488056376974,
-        "W_structure": 29.298360273072998
+        "CL_max": 1.6154510723918778,
+        "W_structure": 29.29826737830275
       },
       "residuals": {
         "W_empty": 0.11073251286122078,
-        "CL_max": 0.09655503523560843,
-        "W_structure": 0.6828460754313777
+        "CL_max": 0.09656920244923567,
+        "W_structure": 0.6828462301948324
       }
     },
     {
@@ -495,8 +495,8 @@
       "power_loading": 6.421203319240567,
       "root_box_depth_mm": 167.82443429986108,
       "margins": {
-        "aerodynamics:AER.V_STALL": -0.15130143862059647,
-        "aerodynamics:AER.LD_CRUISE": -0.3219634753390925,
+        "aerodynamics:AER.V_STALL": -0.1513036544428768,
+        "aerodynamics:AER.LD_CRUISE": -0.3219654451709193,
         "structures:STR.TIP_DEFL": -0.25719459787462007,
         "structures:STR.SPAR_DEPTH": -5.641200736938766,
         "weights:WTS.CLOSURE": -0.1409812738828959,
@@ -505,13 +505,13 @@
       "active": [],
       "couplings": {
         "W_empty": 249.60605323942121,
-        "CL_max": 1.6005813043749715,
-        "W_structure": 28.055101644453135
+        "CL_max": 1.600589662154203,
+        "W_structure": 28.055012691617648
       },
       "residuals": {
         "W_empty": 0.20504090029628308,
-        "CL_max": 0.0036331523435712,
-        "W_structure": 0.35351365651213396
+        "CL_max": 0.0036853884637685907,
+        "W_structure": 0.3535138063077674
       }
     },
     {
@@ -530,8 +530,8 @@
       "power_loading": 4.082649994032766,
       "root_box_depth_mm": 181.4890267025849,
       "margins": {
-        "aerodynamics:AER.V_STALL": -0.27253333004262065,
-        "aerodynamics:AER.LD_CRUISE": -0.26983144184951424,
+        "aerodynamics:AER.V_STALL": -0.27253882182474304,
+        "aerodynamics:AER.LD_CRUISE": -0.269833482138403,
         "structures:STR.TIP_DEFL": -0.2495790545133466,
         "structures:STR.SPAR_DEPTH": -6.324428649000908,
         "weights:WTS.CLOSURE": -0.03499504803508332,
@@ -542,13 +542,13 @@
       ],
       "couplings": {
         "W_empty": 302.6350563944745,
-        "CL_max": 1.634675857866168,
-        "W_structure": 30.435857944336195
+        "CL_max": 1.6347005390939977,
+        "W_structure": 30.435761442961905
       },
       "residuals": {
         "W_empty": 0.028377503667564523,
-        "CL_max": 0.21672411166354932,
-        "W_structure": 0.4939251831958455
+        "CL_max": 0.2168783693374851,
+        "W_structure": 0.49392534485439094
       }
     },
     {
@@ -567,8 +567,8 @@
       "power_loading": 8.979012623171293,
       "root_box_depth_mm": 275.61097805865694,
       "margins": {
-        "aerodynamics:AER.V_STALL": -0.4246931499211947,
-        "aerodynamics:AER.LD_CRUISE": -0.06701449678667896,
+        "aerodynamics:AER.V_STALL": -0.4246929213697478,
+        "aerodynamics:AER.LD_CRUISE": -0.06701659621342904,
         "structures:STR.TIP_DEFL": -0.3342037539694632,
         "structures:STR.SPAR_DEPTH": -11.030514451560588,
         "weights:WTS.CLOSURE": -0.14025124036124526,
@@ -579,13 +579,13 @@
       ],
       "couplings": {
         "W_empty": 249.9927719669518,
-        "CL_max": 1.5847100044066813,
-        "W_structure": 31.835527884309062
+        "CL_max": 1.5847087452958308,
+        "W_structure": 31.83542694507489
       },
       "residuals": {
         "W_empty": 0.11817292796528456,
-        "CL_max": 0.0955624724582424,
-        "W_structure": 0.28317285707733975
+        "CL_max": 0.09557034190105784,
+        "W_structure": 0.2831726600532554
       }
     },
     {
@@ -604,8 +604,8 @@
       "power_loading": 3.967415060516209,
       "root_box_depth_mm": 256.0877720255496,
       "margins": {
-        "aerodynamics:AER.V_STALL": -0.38973275520853107,
-        "aerodynamics:AER.LD_CRUISE": -0.11386500781339921,
+        "aerodynamics:AER.V_STALL": -0.3897323507103635,
+        "aerodynamics:AER.LD_CRUISE": -0.11386727693679477,
         "structures:STR.TIP_DEFL": -0.34645777216158835,
         "structures:STR.SPAR_DEPTH": -10.054356590305979,
         "weights:WTS.CLOSURE": -0.0046624771027486385,
@@ -616,13 +616,13 @@
       ],
       "couplings": {
         "W_empty": 317.8180415044403,
-        "CL_max": 1.5526712566902043,
-        "W_structure": 29.357194456408532
+        "CL_max": 1.5526691984048906,
+        "W_structure": 29.357101375095837
       },
       "residuals": {
         "W_empty": 0.1618552851009972,
-        "CL_max": 0.29580464568622344,
-        "W_structure": 0.8801258744992836
+        "CL_max": 0.29581750996943434,
+        "W_structure": 0.8801256718838227
       }
     },
     {
@@ -641,8 +641,8 @@
       "power_loading": 4.314690571841549,
       "root_box_depth_mm": 247.08215632333545,
       "margins": {
-        "aerodynamics:AER.V_STALL": -0.4147516204740106,
-        "aerodynamics:AER.LD_CRUISE": -0.08391633801094549,
+        "aerodynamics:AER.V_STALL": -0.41474985542744697,
+        "aerodynamics:AER.LD_CRUISE": -0.08391843804654513,
         "structures:STR.TIP_DEFL": -0.3282788023738762,
         "structures:STR.SPAR_DEPTH": -9.604076930897234,
         "weights:WTS.CLOSURE": -0.01478946155664727,
@@ -653,13 +653,13 @@
       ],
       "couplings": {
         "W_empty": 312.7643905872013,
-        "CL_max": 1.5790894394937998,
-        "W_structure": 30.4541202463222
+        "CL_max": 1.5790799148069217,
+        "W_structure": 30.454023687044586
       },
       "residuals": {
         "W_empty": 0.2705935188107213,
-        "CL_max": 0.13069100316375204,
-        "W_structure": 0.36277402545724885
+        "CL_max": 0.13075053245674012,
+        "W_structure": 0.3627742085381807
       }
     },
     {
@@ -678,8 +678,8 @@
       "power_loading": 4.693278760827227,
       "root_box_depth_mm": 242.39528758165176,
       "margins": {
-        "aerodynamics:AER.V_STALL": -0.4342787181166445,
-        "aerodynamics:AER.LD_CRUISE": -0.07699020840753379,
+        "aerodynamics:AER.V_STALL": -0.4342788264643055,
+        "aerodynamics:AER.LD_CRUISE": -0.07699206835806767,
         "structures:STR.TIP_DEFL": -0.3308645800472654,
         "structures:STR.SPAR_DEPTH": -9.369734079671641,
         "weights:WTS.CLOSURE": -0.02882586042686781,
@@ -690,13 +690,13 @@
       ],
       "couplings": {
         "W_empty": 305.7867401275802,
-        "CL_max": 1.673284377002015,
-        "W_structure": 29.24378466716375
+        "CL_max": 1.6732850179413123,
+        "W_structure": 29.24369194543351
       },
       "residuals": {
         "W_empty": 0.3501781617168857,
-        "CL_max": 0.4580273562625928,
-        "W_structure": 0.41114232024001773
+        "CL_max": 0.4580313621332016,
+        "W_structure": 0.4111425135897607
       }
     },
     {
@@ -715,8 +715,8 @@
       "power_loading": 3.757679299535055,
       "root_box_depth_mm": 174.77713715607692,
       "margins": {
-        "aerodynamics:AER.V_STALL": -0.17961658482194118,
-        "aerodynamics:AER.LD_CRUISE": -0.29911303403405815,
+        "aerodynamics:AER.V_STALL": -0.17961304477034762,
+        "aerodynamics:AER.LD_CRUISE": -0.29911560451909863,
         "structures:STR.TIP_DEFL": -0.27543758618761816,
         "structures:STR.SPAR_DEPTH": -5.9888350106617025,
         "weights:WTS.CLOSURE": -0.025451476012632424,
@@ -727,13 +727,13 @@
       ],
       "couplings": {
         "W_empty": 307.47960690626843,
-        "CL_max": 1.540457656854081,
-        "W_structure": 27.88534333516881
+        "CL_max": 1.5404443624256838,
+        "W_structure": 27.88525492057706
       },
       "residuals": {
         "W_empty": 0.08273378569986757,
-        "CL_max": 0.37213964466199373,
-        "W_structure": 0.0015128621597880032
+        "CL_max": 0.3722227348394766,
+        "W_structure": 0.0015127102723309015
       }
     },
     {
@@ -752,8 +752,8 @@
       "power_loading": 6.0759192300838505,
       "root_box_depth_mm": 273.18627434076336,
       "margins": {
-        "aerodynamics:AER.V_STALL": -0.46723141027154275,
-        "aerodynamics:AER.LD_CRUISE": -0.016520732337711824,
+        "aerodynamics:AER.V_STALL": -0.4672344998263608,
+        "aerodynamics:AER.LD_CRUISE": -0.016522390156250715,
         "structures:STR.TIP_DEFL": -0.37843166903311476,
         "structures:STR.SPAR_DEPTH": -10.909279568753874,
         "weights:WTS.CLOSURE": -0.06693791718646008,
@@ -764,13 +764,13 @@
       ],
       "couplings": {
         "W_empty": 286.7357424853193,
-        "CL_max": 1.6911933569987911,
-        "W_structure": 27.006950978324866
+        "CL_max": 1.6912129718189433,
+        "W_structure": 27.006865348805576
       },
       "residuals": {
         "W_empty": 0.42407231641324294,
-        "CL_max": 0.5699584812424441,
-        "W_structure": 0.38518144531557835
+        "CL_max": 0.5700810738683948,
+        "W_structure": 0.38518121379039844
       }
     }
   ]
