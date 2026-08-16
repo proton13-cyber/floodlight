@@ -1,0 +1,277 @@
+{
+  "schema_version": "1.0.0",
+  "publication_id": "weights-r2-3ba60b4e",
+  "supersedes": null,
+  "discipline": "weights",
+  "round": 2,
+  "agent": {
+    "id": "weights-agent",
+    "model": "claude-opus-5",
+    "prompt_version": "weights-v0.4-buildup",
+    "run_id": "run_2026-08-15T23:16:44Z_buildup"
+  },
+  "design_space_ref": {
+    "id": "uav-medium",
+    "version": 1,
+    "hash": "sha256:PLACEHOLDER_COMPUTED_BY_TOOLING"
+  },
+  "mission_ref": {
+    "id": "ref-mission-A",
+    "hash": "sha256:PLACEHOLDER"
+  },
+  "configuration_ref": {
+    "id": "uav-medium-config",
+    "version": 1,
+    "hash": "sha256:54f1cdbb6c784bce81cf0c0f0a5c3d74681294aa1656a93816271530fc9cc964"
+  },
+  "created_at": "2026-08-15T23:16:44Z",
+  "status": "published",
+  "validity": {
+    "box": {
+      "S_ref": [
+        8.0,
+        25.0
+      ],
+      "AR": [
+        8.0,
+        24.0
+      ],
+      "t_c": [
+        0.08,
+        0.18
+      ],
+      "sweep_c4": [
+        0.0,
+        15.0
+      ],
+      "W0": [
+        400.0,
+        1200.0
+      ],
+      "P_SL": [
+        40.0,
+        160.0
+      ]
+    },
+    "extrapolation_policy": "reject",
+    "note": "Full declared space. The build-up is closed form and has no training domain, so there is no sampling-based bound to claim. The real limits are the pinned constants -- fineness ratio 6, packing efficiency 0.72, areal densities, specific power 1.6 kW/kg -- which are declared, not fitted, and are where a weights group would spend its effort."
+  },
+  "active_subspace": [
+    {
+      "variable": "W0",
+      "sensitivity": 1.0,
+      "method": "analytic"
+    },
+    {
+      "variable": "P_SL",
+      "sensitivity": 0.63,
+      "method": "analytic"
+    },
+    {
+      "variable": "AR",
+      "sensitivity": 0.0,
+      "method": "analytic"
+    },
+    {
+      "variable": "S_ref",
+      "sensitivity": 0.0,
+      "method": "analytic"
+    },
+    {
+      "variable": "t_c",
+      "sensitivity": 0.0,
+      "method": "analytic"
+    },
+    {
+      "variable": "sweep_c4",
+      "sensitivity": 0.0,
+      "method": "analytic"
+    }
+  ],
+  "conditioning": [
+    {
+      "coupling_variable": "W_structure",
+      "assumed_value": 165.0,
+      "units": "kg",
+      "assumed_model": {
+        "form": "analytic",
+        "inputs": [
+          "W0",
+          "S_ref",
+          "AR",
+          "t_c",
+          "sweep_c4"
+        ],
+        "expression": "(-48.92783 +0.12340376*W0 +2.4986497*S_ref +22.891991*AR -1420.7054*t_c +0.21405336*sweep_c4)",
+        "provenance": {
+          "kind": "linear_internalization",
+          "fit_rel_rmse": 0.1364,
+          "fit_worst_rel_err": 1.8466,
+          "note": "Deliberately low-order belief about the supplier, refit at each broadcast. The residual it produces varies in space (where the belief is too crude) AND in time (when it goes stale).",
+          "snapshot_of": "structures-r2-c44c2a7e"
+        }
+      },
+      "source": {
+        "type": "seed",
+        "publication_id": null,
+        "note": "Wing box mass from the structures discipline. This is now a genuine addend in a sum, not a term inside a fitted expression, so the closure constraint moves one-for-one with what structures publishes."
+      },
+      "drift_tolerance": {
+        "kind": "relative",
+        "value": 0.08
+      }
+    },
+    {
+      "coupling_variable": "n_z_ult",
+      "assumed_value": 5.7,
+      "units": "g",
+      "source": {
+        "type": "requirement",
+        "publication_id": null,
+        "note": "Frozen by the requirement set."
+      },
+      "drift_tolerance": {
+        "kind": "absolute",
+        "value": 0.01
+      }
+    }
+  ],
+  "provides": [
+    {
+      "coupling_variable": "W_empty",
+      "units": "kg",
+      "surrogate": {
+        "form": "analytic",
+        "inputs": [
+          "W_structure",
+          "W0",
+          "P_SL",
+          "S_ref",
+          "AR"
+        ],
+        "expression": "(W_structure + (14.567879294*(((0.00024*W0 + 0.51) / 1.86610603623)**(1.0/3.0))*maximum((6*(((0.00024*W0 + 0.51) / 1.86610603623)**(1.0/3.0))), (1.05*(0.333333333333*(S_ref/AR)**0.5 + 3.62962962963*(S_ref/AR)**0.5 + 0.18687063686*S_ref**0.5) + 0.42*(6*(((0.00024*W0 + 0.51) / 1.86610603623)**(1.0/3.0)))))) + 0.975*P_SL + 0.1016*W0 + 20.5)",
+        "fit": {
+          "n_train": 0,
+          "r2": 1.0,
+          "rmse": 0.0,
+          "cv": "exact -- closed-form build-up, verified against weights/mass.py over 4000 random points to 1e-9"
+        },
+        "sigma": {
+          "form": "constant",
+          "value": 18.0
+        }
+      }
+    }
+  ],
+  "constraints": [
+    {
+      "id": "WTS.CLOSURE",
+      "description": "Mass closure: empty + payload + mission fuel must fit inside the design gross mass. This is the sizing fixed point in inequality form.",
+      "requirement_ref": "REQ-CLOSE",
+      "sense": "le_zero",
+      "normalization": {
+        "kind": "limit_relative",
+        "scale": 1.0,
+        "description": "g as a fraction of W0."
+      },
+      "criticality": "hard",
+      "surrogate": {
+        "form": "analytic",
+        "inputs": [
+          "W_structure",
+          "W0",
+          "P_SL",
+          "S_ref",
+          "AR"
+        ],
+        "expression": "(((W_structure + (14.567879294*(((0.00024*W0 + 0.51) / 1.86610603623)**(1.0/3.0))*maximum((6*(((0.00024*W0 + 0.51) / 1.86610603623)**(1.0/3.0))), (1.05*(0.333333333333*(S_ref/AR)**0.5 + 3.62962962963*(S_ref/AR)**0.5 + 0.18687063686*S_ref**0.5) + 0.42*(6*(((0.00024*W0 + 0.51) / 1.86610603623)**(1.0/3.0)))))) + 0.975*P_SL + 0.1016*W0 + 20.5)) + 90.0 + (0.18*W0) - W0) / W0",
+        "fit": {
+          "n_train": 0,
+          "r2": 1.0,
+          "rmse": 0.0,
+          "cv": "exact"
+        },
+        "sigma": {
+          "form": "constant",
+          "value": 0.025
+        }
+      },
+      "reporting": {
+        "physical_expression": "((W_structure + (14.567879294*(((0.00024*W0 + 0.51) / 1.86610603623)**(1.0/3.0))*maximum((6*(((0.00024*W0 + 0.51) / 1.86610603623)**(1.0/3.0))), (1.05*(0.333333333333*(S_ref/AR)**0.5 + 3.62962962963*(S_ref/AR)**0.5 + 0.18687063686*S_ref**0.5) + 0.42*(6*(((0.00024*W0 + 0.51) / 1.86610603623)**(1.0/3.0)))))) + 0.975*P_SL + 0.1016*W0 + 20.5)) + 90.0 + (0.18*W0)",
+        "limit": "W0",
+        "units": "kg"
+      }
+    },
+    {
+      "id": "WTS.PWR_LOADING",
+      "description": "Power loading at gross mass. Unchanged in form from r1, but P_SL now carries a real mass and a real cooling drag, so buying power is no longer free.",
+      "requirement_ref": null,
+      "sense": "le_zero",
+      "normalization": {
+        "kind": "absolute_scale",
+        "scale": 1.5,
+        "description": "g = (W0/P_SL - 9.0)/1.5, kg per kW."
+      },
+      "criticality": "hard",
+      "surrogate": {
+        "form": "analytic",
+        "inputs": [
+          "W0",
+          "P_SL"
+        ],
+        "expression": "(W0/P_SL - 9.0) / 1.5",
+        "fit": {
+          "n_train": 0,
+          "r2": 1.0,
+          "rmse": 0.0,
+          "cv": "exact"
+        }
+      },
+      "reporting": {
+        "physical_expression": "W0/P_SL",
+        "limit": 9.0,
+        "units": "kg/kW"
+      }
+    }
+  ],
+  "objectives": [
+    {
+      "id": "WTS.EMPTY",
+      "direction": "minimize",
+      "units": "kg",
+      "surrogate": {
+        "form": "analytic",
+        "inputs": [
+          "W_structure",
+          "W0",
+          "P_SL",
+          "S_ref",
+          "AR"
+        ],
+        "expression": "(W_structure + (14.567879294*(((0.00024*W0 + 0.51) / 1.86610603623)**(1.0/3.0))*maximum((6*(((0.00024*W0 + 0.51) / 1.86610603623)**(1.0/3.0))), (1.05*(0.333333333333*(S_ref/AR)**0.5 + 3.62962962963*(S_ref/AR)**0.5 + 0.18687063686*S_ref**0.5) + 0.42*(6*(((0.00024*W0 + 0.51) / 1.86610603623)**(1.0/3.0)))))) + 0.975*P_SL + 0.1016*W0 + 20.5)"
+      }
+    }
+  ],
+  "evidence": {
+    "tool": {
+      "name": "floodlight weights.mass component build-up",
+      "version": "0.4",
+      "fidelity": "low"
+    },
+    "method_ref": "Fuselage sized by required internal volume (mission fuel at 750 kg/m^3, payload at 250 kg/m^3 packed, 0.15 m^3 equipment, 72% packing), body of revolution at fineness 6, mass from wetted area at 4.1 kg/m^2 for glass/foam sandwich with a 1.45 non-optimum factor. Propulsion from installed power at 1.6 kW/kg with 50% installation, propeller and fuel system. Systems 4.5% of W0 + 14 kg; gear 3.5% of W0.",
+    "n_evaluations": 0,
+    "doe": {
+      "type": "none -- closed form",
+      "seed": 0
+    },
+    "input_deck_refs": [
+      {
+        "uri": "weights/mass.py::mass_breakdown",
+        "sha256": "sha256:PLACEHOLDER",
+        "media_type": "text/x-python"
+      }
+    ],
+    "convergence_notes": "Closed form; no solver, no convergence. Verified against the implementing module over 4000 random points, max relative disagreement 9.5e-13.",
+    "known_limitations": "Every constant here is declared judgement, not measurement: fineness ratio, packing efficiency, areal densities, specific power, the systems and gear fractions. No structural fuselage sizing -- the shell is weighed by area, not sized against loads, so a pressurised or highly loaded body would be understated. No margin policy and no growth allowance, which real programmes carry at 5-10%. SEPARATELY, this module can also produce the non-wing parasite drag the aero publications currently carry as a declared constant (0.0062 + 0.14/S_ref). The wetted-area build-up gives roughly 35-50% LESS than that constant (S=10,W0=500: 0.01234, S=16,W0=700: 0.01002, S=22,W0=1100: 0.00898), i.e. a clean-configuration estimate. The truth is probably between the two and the discrepancy is an open item for review -- aero has NOT yet been switched over to it."
+  }
+}

@@ -62,6 +62,9 @@ def evaluate_surrogate(sur: dict, ns: dict[str, Any]) -> np.ndarray:
             raise KeyError(f"surrogate inputs not in namespace: {missing}")
         env = {"__builtins__": {}}
         env.update(SAFE_NS)
+        # frozen_inputs: values the publishing discipline baked in at snapshot time,
+        # for coupling variables the evaluating discipline does not itself carry.
+        env.update(sur.get("frozen_inputs", {}))
         env.update({k: ns[k] for k in sur["inputs"]})
         with np.errstate(all="ignore"):
             return np.asarray(eval(sur["expression"], env), dtype=float)  # noqa: S307
@@ -138,6 +141,7 @@ def validate(pubs: list[Publication], space: Space) -> list[str]:
     """Structural checks that must pass before any intersection is attempted."""
     errs: list[str] = []
     superseded = {p.raw.get("supersedes") for p in pubs if p.raw.get("supersedes")}
+    cfg_ref = None
 
     for p in pubs:
         tag = f"[{p.pid}]"
@@ -151,6 +155,27 @@ def validate(pubs: list[Publication], space: Space) -> list[str]:
 
         if p.pid in superseded:
             errs.append(f"{tag} is superseded by a newer publication.")
+
+        # --- configuration gate ----------------------------------------------------
+        # Same argument as design_space_ref, applied to SHAPE rather than to variables.
+        # Taper, washout, tail volume, tail arm, fineness ratio, materials and lattice
+        # density are not design variables, but more than one discipline depends on
+        # each of them -- and they were duplicated across four modules with no way to
+        # detect disagreement. They did disagree, and no consistency residual could
+        # ever have caught it, because the interfaces were never declared.
+        cref = p.raw.get("configuration_ref")
+        if cref is None:
+            errs.append(f"{tag} carries no configuration_ref. Its geometric "
+                        f"assumptions are undeclared and cannot be checked.")
+        else:
+            if cfg_ref is None:
+                cfg_ref = (cref, p.pid)
+            elif cref != cfg_ref[0]:
+                errs.append(
+                    f"{tag} references configuration {cref.get('id')} "
+                    f"v{cref.get('version')} {str(cref.get('hash'))[:20]}..., but "
+                    f"{cfg_ref[1]} references {cfg_ref[0].get('hash')[:20]}.... "
+                    f"These describe DIFFERENT aircraft and must not be intersected.")
 
         for v, (lo, hi) in p.raw["validity"]["box"].items():
             if v not in space.bounds:
@@ -273,8 +298,53 @@ def consistency(pubs, space, X):
             sup_pub, pr = suppliers[cv]
             actual = evaluate_surrogate(pr["surrogate"], namespace(X, space, sup_pub))
             actual = np.broadcast_to(np.nan_to_num(actual, nan=1e9), (len(X),)).copy()
-            assumed = float(c["assumed_value"])
             tol = c["drift_tolerance"]
+
+            # ---- assumed MODEL, if the consumer published one -----------------------
+            #
+            # A scalar assumption has an unstated precondition: the coupling variable
+            # must be roughly constant over the region it is asserted across. When it
+            # is not -- W_structure ranges 14x over this domain -- the residual
+            # conflates two different things:
+            #
+            #   (a) how far the supplier has DRIFTED from what the consumer believed
+            #   (b) how much the supplier's value simply VARIES with the design vector
+            #
+            # (b) is not error. It is the coupling being design-dependent, which is
+            # normal and expected. Measuring it as inconsistency makes most of the
+            # domain look conflicted when the disciplines never actually disagreed.
+            #
+            # An assumed_model is a SNAPSHOT the consumer took of the supplier's
+            # surrogate at publish time -- its belief about the supplier, frozen. It is
+            # NOT a live call to the supplier, and that distinction is what keeps this
+            # decentralised: the consumer can still be wrong, and goes stale the moment
+            # the supplier republishes. What changes is that it is now wrong about a
+            # FUNCTION rather than about a POINT, so the residual measures (a) alone.
+            model = c.get("assumed_model")
+            if model is not None:
+                assumed_arr = evaluate_surrogate(model, namespace(X, space, p))
+                assumed_arr = np.broadcast_to(
+                    np.nan_to_num(np.asarray(assumed_arr, dtype=float), nan=1e9),
+                    (len(X),)).copy()
+                if tol["kind"] == "relative":
+                    denom = np.maximum(np.abs(assumed_arr), 1e-12)
+                    norm = np.abs(actual - assumed_arr) / denom / tol["value"]
+                else:
+                    norm = np.abs(actual - assumed_arr) / tol["value"]
+                res[f"{p.discipline}<-{cv}"] = {
+                    "status": "OK",
+                    "supplier": sup_pub.discipline,
+                    "assumed": float(np.median(assumed_arr)),
+                    "assumed_arr": assumed_arr,
+                    "assumed_kind": "model",
+                    "model_of": (model.get("provenance") or {}).get("snapshot_of"),
+                    "actual": actual,
+                    "norm_residual": norm,
+                    "tol": tol,
+                }
+                continue
+
+            assumed = float(c["assumed_value"])
             if tol["kind"] == "relative":
                 norm = np.abs(actual - assumed) / max(abs(assumed), 1e-12) / tol["value"]
             else:
@@ -283,6 +353,7 @@ def consistency(pubs, space, X):
                 "status": "OK",
                 "supplier": sup_pub.discipline,
                 "assumed": assumed,
+                "assumed_kind": "scalar",
                 "actual": actual,
                 "norm_residual": norm,   # <= 1.0 means inside declared tolerance
                 "tol": tol,
@@ -374,7 +445,7 @@ def main() -> int:
         tolstr = (f"±{r['tol']['value']*100:.0f}%" if r["tol"]["kind"] == "relative"
                   else f"±{r['tol']['value']:g}")
         print(f"    {bar(float(np.mean(ok)))} {np.mean(ok)*100:5.1f}%  {k}"
-              f"  assumed {r['assumed']:g} {tolstr}, supplier "
+              f"  assumed {'MODEL of ' + str(r.get('model_of') or 'supplier') if r.get('assumed_kind') == 'model' else format(r['assumed'], 'g')} {tolstr}, supplier "
               f"{r['supplier']} produces {np.min(r['actual']):.1f}"
               f"..{np.max(r['actual']):.1f}")
 
@@ -436,10 +507,43 @@ def main() -> int:
             tgt = float(np.median(r["actual"][feas])) if feas.sum() \
                 else float(np.median(r["actual"]))
         drift = abs(tgt - r["assumed"]) / max(abs(r["assumed"]), 1e-12)
+        consumer, cv = k.split("<-")
+
+        # -- Is a scalar assumption even capable of satisfying this tolerance? --
+        #
+        # Scalar conditioning has an unstated precondition: the coupling variable must
+        # be roughly CONSTANT over the region it is asserted across. When it is not, no
+        # value of `assumed_value` can satisfy the drift tolerance, and broadcasting
+        # "re-derive with X = 164.0" asks for something unreachable -- the orchestrator
+        # will emit a new target every round, forever, and the run looks like slow
+        # convergence rather than a structural mismatch.
+        #
+        # Test it directly: take the BEST possible scalar (the median over the region
+        # of interest) and ask what fraction of points it covers within tolerance. If
+        # even that fails, the problem is the conditioning FORM, not its value.
+        region = r["actual"][both] if both.sum() else (
+            r["actual"][feas] if feas.sum() else r["actual"])
+        best = float(np.median(region))
+        if r["tol"]["kind"] == "relative":
+            dev = np.abs(region - best) / max(abs(best), 1e-12)
+        else:
+            dev = np.abs(region - best)
+        coverage = float(np.mean(dev <= r["tol"]["value"]))
+        spread = float(np.max(region) / max(np.min(region), 1e-12))
+        needed = float(np.percentile(dev, 90))
+
+        if coverage < 0.5:
+            print(f"    IMPOSSIBLE {consumer:13s} {cv} varies x{spread:.1f} over this "
+                  f"region; the best scalar covers only {coverage*100:.0f}% within "
+                  f"+/-{r['tol']['value']*100:.0f}%.")
+            print(f"    {'':9s} {'':14s} NO value of assumed_value can satisfy this. "
+                  f"Reaching 90% needs +/-{needed*100:.0f}%. Publish an assumed MODEL "
+                  f"over the design vector, or narrow the region.")
+            continue
+
         verdict = "REPUBLISH" if drift > r["tol"]["value"] else "hold"
-        consumer = k.split("<-")[0]
         print(f"    {verdict:9s} {consumer:14s} re-derive with "
-              f"{k.split('<-')[1]} = {tgt:.1f} (was {r['assumed']:g}, "
+              f"{cv} = {tgt:.1f} (was {r['assumed']:g}, "
               f"drift {drift*100:.1f}%)")
 
     print()

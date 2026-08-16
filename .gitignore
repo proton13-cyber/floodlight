@@ -5,3 +5,4 @@ node_modules/
 *.tar.gz
 .venv/
 venv/
+_to_delete/

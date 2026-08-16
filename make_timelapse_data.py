@@ -35,6 +35,7 @@ import numpy as np
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
 from mdao_contract import (load_space, load_publications, common_box,
                            margins, consistency)
+from configuration import fit_snapshot
 
 ROOT = pathlib.Path(__file__).parent
 ALPHA = 0.6           # fixed-point under-relaxation
@@ -55,9 +56,67 @@ NAMES = space.var_names
 
 
 def set_cond(disc, cv, val):
+    """Set a SCALAR assumption. Still used for couplings that stay scalar (CL_max)."""
     for c in by_disc[disc].raw["conditioning"]:
         if c["coupling_variable"] == cv:
             c["assumed_value"] = float(val)
+
+
+def cond_entry(disc, cv):
+    for c in by_disc[disc].raw["conditioning"]:
+        if c["coupling_variable"] == cv:
+            return c
+    raise KeyError(cv)
+
+
+def mis_seed(disc, cv, factor):
+    """Start the campaign believing something wrong.
+
+    With a scalar assumption, being wrong meant naming the wrong number. With an
+    assumed MODEL it means holding a distorted picture of the supplier -- so scale the
+    snapshot. 1.58 is "weights thinks structures is 58% heavier than it is": the same
+    premise error the original campaign opened with, against a function not a point.
+    """
+    c = cond_entry(disc, cv)
+    if "assumed_model" in c:
+        m = c["assumed_model"]
+        m["expression"] = f"({factor}*({m['expression']}))"
+        m.setdefault("provenance", {})["mis_seeded_by"] = factor
+    c["assumed_value"] = float(c["assumed_value"]) * factor
+
+
+def relax_cond(disc, cv, supplier_disc, alpha):
+    """Damped update of a MODEL belief -- toward a FRESH LOW-ORDER FIT, not verbatim.
+
+    Blending toward the supplier's raw expression would let the consumer gradually
+    acquire the expert's entire model; within a few rounds the belief is a perfect
+    copy, consistency goes uniform in space, and the gold regions dissolve again. A
+    receiving team does not accumulate its partner's model -- it refreshes its
+    SIMPLIFIED picture at each broadcast. So: refit the linear internalization against
+    the supplier's current expression and premises, then damp toward that. The belief
+    stays permanently crude (spatial structure survives) while still catching up after
+    events (staleness heals).
+    """
+    c = cond_entry(disc, cv)
+    if "assumed_model" not in c:
+        return False
+    sup_raw = by_disc[supplier_disc].raw
+    sup = None
+    for pr in sup_raw.get("provides", []):
+        if pr["coupling_variable"] == cv:
+            sup = pr["surrogate"]
+    if sup is None or sup.get("form") != "analytic":
+        return False
+    frozen = {cc["coupling_variable"]: float(cc["assumed_value"])
+              for cc in sup_raw.get("conditioning", [])}
+    fresh = fit_snapshot(sup["expression"], sup["inputs"], frozen,
+                         sup_raw["validity"]["box"])
+    m = c["assumed_model"]
+    m["expression"] = (f"({1 - alpha}*({m['expression']}) "
+                       f"+ {alpha}*({fresh['expression']}))")
+    m["inputs"] = sorted(set(m.get("inputs", [])) | set(fresh["inputs"]))
+    m.pop("frozen_inputs", None)   # fitted beliefs carry premises in their coefficients
+    return True
 
 
 def patch(disc, where, cid, old, new):
@@ -72,29 +131,215 @@ def patch(disc, where, cid, old, new):
     raise KeyError(cid)
 
 
+def scale_constraint(disc, cid, k):
+    """Scale the PHYSICAL quantity behind a normalised le_zero constraint by k.
+
+    For g = (q - L)/L, scaling q by k gives g' = k*g + (k-1). Exact, and independent
+    of the fitted coefficients -- which is the point. String-patching a coefficient
+    ("0.045 *" -> "0.0338 *") only works while that literal exists, so it breaks the
+    moment a publication is refitted, on a different machine, or by a different AVL
+    build. Declared CONSTANTS are safe to string-patch; fitted expressions are not.
+    """
+    for it in by_disc[disc].raw["constraints"]:
+        if it["id"] == cid:
+            e = it["surrogate"]["expression"]
+            it["surrogate"]["expression"] = f"({k}*({e}) + {k - 1.0})"
+            return
+    raise KeyError(cid)
+
+
+def scale_provides(disc, cv, k):
+    """Scale a published coupling variable by k. The expression IS the physical
+    quantity here, so this is a straight multiply."""
+    for it in by_disc[disc].raw["provides"]:
+        if it["coupling_variable"] == cv:
+            e = it["surrogate"]["expression"]
+            it["surrogate"]["expression"] = f"({k}*({e}))"
+            return
+    raise KeyError(cv)
+
+
+
+
+# ---------------------------------------------------------------------------
+# truth grids for the viz. The dashboard template used to carry its own copy of
+# the physics in JavaScript -- the original hand-written r1 surrogates, frozen.
+# Every frame anyone ever looked at was real archive points drawn over an
+# r1-physics backdrop: admissible planforms in "infeasible" red, tooltips 19x
+# off. The viz was an undeclared consumer with a verbatim snapshot that went
+# stale eleven revisions ago -- exactly the failure class this repo is about.
+# Fix: Python evaluates the CURRENT publications on grids; the JS only paints.
+# ---------------------------------------------------------------------------
+import base64 as _b64
+
+_G_ORDER = ["AER.V_STALL", "AER.LD_CRUISE", "STR.TIP_DEFL",
+            "STR.SPAR_DEPTH", "WTS.CLOSURE", "WTS.PWR_LOADING"]
+_R_ORDER = ["W_empty", "W_structure", "CL_max"]
+
+
+def _b64u8(a):
+    return _b64.b64encode(bytes(bytearray(np.asarray(a, dtype=np.uint8)))).decode()
+
+
+def _make_dist(raw):
+    """Histogram the belief/actual pairs onto per-coupling axes FIXED across rounds,
+    normalized by one global max per coupling -- scrubbing shows the silhouettes
+    moving, never the axes rescaling under them."""
+    items = []
+    for k in raw[0]:
+        cons, cv = k.split("<-")
+        sup = raw[0][k]["supplier"]
+        allv = np.concatenate([np.concatenate([r[k]["b"], r[k]["a"]]) for r in raw])
+        lo, hi = np.percentile(allv, [0.5, 99.5])
+        pad = 0.05 * (hi - lo) or 1.0
+        lo, hi = float(lo - pad), float(hi + pad)
+        if cv.startswith("W_"):
+            lo = max(0.0, lo)   # a linear belief can extrapolate negative mass at the
+                                # box corners; the axis should not dignify that
+        NB = 36
+        edges = np.linspace(lo, hi, NB + 1)
+        # A scalar belief is a delta function: histogrammed, its one bin holds every
+        # sample and a SHARED normalization squashes the partner's real distribution
+        # flat. So: each curve normalized by its own max across rounds, and a scalar
+        # belief shipped as a value ("bv") to be drawn as a needle, not as a
+        # degenerate histogram.
+        scal = [float(np.ptp(r[k]["b"])) < 1e-9 for r in raw]
+        hb = [None if sc else np.histogram(np.clip(r[k]["b"], lo, hi), bins=edges)[0]
+              for sc, r in zip(scal, raw)]
+        ha = [np.histogram(np.clip(r[k]["a"], lo, hi), bins=edges)[0] for r in raw]
+        mxa = max(1, max(int(h.max()) for h in ha))
+        mxb = max([1] + [int(h.max()) for h in hb if h is not None])
+        rounds = []
+        for sc, b, a, r in zip(scal, hb, ha, raw):
+            rec = {"a": np.round(a / mxa * 100).astype(int).tolist(),
+                   "ok": round(float(r[k]["ok"]), 1)}
+            # WHERE the pointwise failures live, binned by the supplier's value.
+            # Consistency is design-by-design, so two near-identical silhouettes can
+            # still fail badly -- errors that change sign across the box cancel in the
+            # marginal, and a RELATIVE tolerance is harshest where the value is small.
+            # Without this strip the panel invites exactly that misreading.
+            av = np.clip(r[k]["a"], lo, hi)
+            idx = np.clip(np.digitize(av, edges) - 1, 0, NB - 1)
+            fail = np.zeros(NB)
+            for bi in range(NB):
+                m = idx == bi
+                if m.any():
+                    fail[bi] = float(np.mean(r[k]["nr"][m] > 1.0))
+            rec["f"] = np.round(fail * 100).astype(int).tolist()
+            if sc:
+                rec["bv"] = round(float(r[k]["b"][0]), 4)
+            else:
+                rec["b"] = np.round(b / mxb * 100).astype(int).tolist()
+            rounds.append(rec)
+        items.append({"cv": cv, "consumer": cons, "supplier": sup,
+                      "lo": round(lo, 3), "hi": round(hi, 3),
+                      "unit": "kg" if cv.startswith("W_") else "",
+                      "rounds": rounds})
+    return {"bins": 36, "items": items}
+
+
+def _grid_eval(Xg):
+    G, _ = margins(pubs, space, Xg)
+    R = consistency(pubs, space, Xg)
+    fa = np.ones(len(Xg), bool); fs = fa.copy(); fw = fa.copy()
+    for k, g in G.items():
+        d = k.split(":")[0]; m = g <= 0
+        if d == "aerodynamics": fa &= m
+        elif d == "structures": fs &= m
+        else: fw &= m
+    cons = np.ones(len(Xg), bool)
+    for v in R.values():
+        cons &= (v["norm_residual"] <= 1.0) if v["status"] == "OK" else False
+    adm = fa & fs & fw & cons
+    byte = (fa.astype(np.uint8) | (fs.astype(np.uint8) << 1)
+            | (fw.astype(np.uint8) << 2) | (cons.astype(np.uint8) << 3)
+            | (adm.astype(np.uint8) << 4))
+    return G, R, byte
+
+
+def _slice_X(fixed, vx, vy, nx, ny):
+    bx, by = VBOX[vx], VBOX[vy]
+    xs = bx[0] + (np.arange(nx) + .5) / nx * (bx[1] - bx[0])
+    ys = by[1] - (np.arange(ny) + .5) / ny * (by[1] - by[0])   # top row = high
+    X = np.empty((nx * ny, len(NAMES)))
+    for v in NAMES:
+        X[:, iv[v]] = fixed[v]
+    X[:, iv[vx]] = np.tile(xs, ny)
+    X[:, iv[vy]] = np.repeat(ys, nx)
+    return X
+
+
+def viz_grids(slice6):
+    # main map, AR x W0
+    FW, FH = 96, 96
+    _, _, byte = _grid_eval(_slice_X(slice6, "AR", "W0", FW, FH))
+    field = {"w": FW, "h": FH, "m": _b64u8(byte)}
+    # tooltip values, coarser
+    TW, TH = 36, 24
+    G, R, _ = _grid_eval(_slice_X(slice6, "AR", "W0", TW, TH))
+    gp = []
+    for suf in _G_ORDER:
+        g = next(v for k, v in G.items() if k.endswith(suf))
+        gp.append(_b64u8(np.clip(np.round(g * 20) + 128, 0, 255)))
+    rp_ = []
+    for suf in _R_ORDER:
+        v = next((v for k, v in R.items()
+                  if v["status"] == "OK" and k.endswith("<-" + suf)), None)
+        arr = v["norm_residual"] if v is not None else np.zeros(TW * TH)
+        rp_.append(_b64u8(np.clip(np.round(arr * 16), 0, 255)))
+    tt = {"w": TW, "h": TH, "g": gp, "r": rp_}
+    # pairwise panels, lower triangle of PGV order (must match the template loop)
+    PGV = ["AR", "W0", "S_ref", "P_SL", "t_c", "sweep_c4"]
+    PR = 24
+    panels = []
+    for jj in range(6):
+        for ii in range(jj):
+            _, _, byte = _grid_eval(_slice_X(slice6, PGV[ii], PGV[jj], PR, PR))
+            panels.append(_b64u8(byte))
+    return field, tt, {"pr": PR, "m": panels}
+
+
 EVENTS = {
-    3: ("Structures re-ran ASWING with the FAR-23 gust case",
-        "Adding the gust case raised predicted tip deflection 42%. The structures "
+    3: ("Structures added the FAR-23 gust load case",
+        "Adding the gust case raises required cap area 42%. The structures "
         "region shrinks at high AR — and part of the archive is evicted.",
         "structures",
-        lambda: patch("structures", "constraints", "STR.TIP_DEFL", "1.0e-9", "1.42e-9")),
+        lambda: scale_constraint("structures", "STR.TIP_DEFL", 1.42)),
     6: ("Structures switched the spar caps to carbon",
-        "Primary structural mass falls 25% for the same stiffness. Weights is still "
+        "Primary structural mass falls 53% for the same stiffness. Weights is still "
         "conditioned on the OLD value, so the archive is gutted before it recovers.",
         "structures",
-        lambda: patch("structures", "provides", "W_structure", "0.045 *", "0.0338 *")),
+        # Carbon caps. The beam model measures -53% on a stiffness-critical wing, not
+        # the -25% this event originally asserted -- carbon wins twice, on modulus and
+        # on density, and the saving grows with aspect ratio.
+        lambda: scale_provides("structures", "W_structure", 0.47)),
+    # Retargeted for aerodynamics-r2. r1's CD0 was one blended constant ("0.014 + ..."),
+    # so the fuselage re-loft was patched onto a number that mixed wing and non-wing
+    # drag. r2 splits them: the wing term is fitted from strip integration and the
+    # non-wing parasite term is the declared build-up -- which is the only part a
+    # fuselage re-loft can actually touch. Same -11% on the term that represents the
+    # fuselage, applied to the term that represents the fuselage.
     9: ("Aerodynamics re-lofted the fuselage and rebuilt the wetted area",
-        "CD0 build-up fell from 0.0140 to 0.0125 (-11%), relaxing cruise L/D across "
+        "Non-wing parasite build-up fell 11%, relaxing cruise L/D across "
         "the whole domain and opening new territory to explore.",
         "aerodynamics",
-        lambda: patch("aerodynamics", "constraints", "AER.LD_CRUISE", "0.014 +", "0.0125 +")),
+        lambda: patch("aerodynamics", "constraints", "AER.LD_CRUISE",
+                      "0.0062 + 0.14/S_ref", "0.0055 + 0.1246/S_ref")),
 }
 
-set_cond("weights", "W_structure", 260.0)
-set_cond("aerodynamics", "W_empty", 330.0)
+# Open on bad premises, as the original campaign did -- expressed against whatever
+# form the conditioning actually takes.
+mis_seed("weights", "W_structure", 260.0 / 165.0)
+mis_seed("aerodynamics", "W_empty", 330.0 / 390.0)
 set_cond("structures", "CL_max", 1.45)
 
 VBOX, _ = common_box(pubs, space)
+
+# Fixed sample for the belief-distribution panel: the SAME points every round, so the
+# histograms move only when beliefs or suppliers move, never from sampling noise.
+_rngd = np.random.default_rng(7)
+_dist_raw = []
+_X_DIST = None
 rng = np.random.default_rng(SEED)
 iv = {v: i for i, v in enumerate(NAMES)}
 LO = np.array([VBOX[v][0] for v in NAMES])
@@ -251,6 +496,31 @@ for r in range(ROUNDS):
         np.vstack([Gm[keys.index(k)] for k in keys if k.startswith(d + ":")]) <= 0,
         axis=0))) * 100, 1) for d in DISCS}
 
+    # Truth grids for the viz, computed BEFORE the broadcast relaxes beliefs --
+    # the map must show the world this round actually sampled, or the stats panel
+    # ("no admissible designs") and the picture (a gold region) contradict.
+    _viz_field, _viz_tt, _viz_pg = viz_grids(slice6)
+
+    # Belief distributions: push each discipline's ASSUMED picture of its partners,
+    # and the partner's ACTUAL published function, through the same fixed sample of
+    # the jointly trusted box. Two histograms per coupling per round. A scalar belief
+    # shows up as a needle; a lossy model as a spread; staleness as the two
+    # silhouettes separating. This is the conditioning mechanism drawn directly.
+    if _X_DIST is None:
+        _X_DIST = LO + _rngd.random((3000, len(NAMES))) * (HI - LO)
+    _Rd = consistency(pubs, space, _X_DIST)
+    _dr = {}
+    for _k, _v in _Rd.items():
+        if _v["status"] != "OK":
+            continue
+        _b = _v.get("assumed_arr")
+        _b = np.full(len(_X_DIST), _v["assumed"]) if _b is None else np.asarray(_b, float)
+        _dr[_k] = {"supplier": _v["supplier"], "b": _b.copy(),
+                   "a": np.asarray(_v["actual"], float).copy(),
+                   "nr": np.asarray(_v["norm_residual"], float).copy(),
+                   "ok": 100 * float(np.mean(_v["norm_residual"] <= 1.0))}
+    _dist_raw.append(_dr)
+
     msgs, notes = [], {}
     for k, v in R.items():
         if v["status"] != "OK":
@@ -266,7 +536,15 @@ for r in range(ROUNDS):
                      "verdict": "REPUBLISH" if rep else "hold"})
         notes[consumer] = {"status": "republish" if rep else "closed", "cv": cvn,
                            "drift": round(drift * 100, 1), "feas": disc_feas[consumer]}
-        set_cond(consumer, cvn, v["assumed"] + ALPHA * (tgt - v["assumed"]))
+        # BOTH updates, not either/or. The model is what the consistency check
+        # evaluates; the scalar is what namespace() feeds this discipline's OWN
+        # surrogates when it acts as a supplier. An either/or here left the scalar
+        # frozen at its mis-seeded value once a model existed, which poisoned the
+        # supplier chain (weights kept producing W_empty with W_structure=260 baked
+        # in) and zeroed every round of the campaign.
+        relax_cond(consumer, cvn, v["supplier"], ALPHA)
+        if np.isfinite(tgt):
+            set_cond(consumer, cvn, v["assumed"] + ALPHA * (tgt - v["assumed"]))
 
     NICE = {"AER.LD_CRUISE": "cruise L/D", "AER.V_STALL": "stall speed",
             "STR.TIP_DEFL": "tip deflection", "STR.SPAR_DEPTH": "spar depth",
@@ -294,6 +572,7 @@ for r in range(ROUNDS):
         "assumed": {k: round(v, 1) for k, v in assumed.items()},
         "slice": {k: round(v, 3) for k, v in slice_vals.items()},
         "slice6": {k: round(v, 4) for k, v in slice6.items()},
+        "field": _viz_field, "tt": _viz_tt, "pg": _viz_pg,
         "stats": {"feas": round(float(feas.mean()) * 100, 2),
                   "cons": round(float(cons.mean()) * 100, 2),
                   "both": round(yield_pct, 2), "vol": round(vol_pct, 3),
@@ -311,6 +590,7 @@ for r in range(ROUNDS):
           f"best W0 {'' if best_w0 is None else f'{best_w0:.0f}':>4}  {'◆' if ev else ' '}")
 
 out = {"box": {v: [round(VBOX[v][0], 3), round(VBOX[v][1], 3)] for v in NAMES},
-       "alpha": ALPHA, "budget": BUDGET, "mix": MIX, "rounds": rounds}
+       "alpha": ALPHA, "budget": BUDGET, "mix": MIX, "rounds": rounds,
+       "dist": _make_dist(_dist_raw)}
 (ROOT / "timelapse_data.json").write_text(json.dumps(out))
 print("wrote timelapse_data.json,", len(json.dumps(out)) // 1024, "KB")

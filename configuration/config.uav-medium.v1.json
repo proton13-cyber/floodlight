@@ -1,0 +1,48 @@
+{
+  "$comment": "Canonical shared CONFIGURATION. Everything about the vehicle's shape that is NOT a design variable but that more than one discipline needs to agree on. Every publication must reference this by id+version+hash, exactly as it references the design space. Two publications with different configuration_ref describe different aircraft and must not be intersected.",
+  "id": "uav-medium-config",
+  "version": 1,
+  "hash": "sha256:PLACEHOLDER_COMPUTED_BY_TOOLING",
+  "description": "Shared geometric and material assumptions for the uav-medium design space. These were previously duplicated across aero/geometry.py, structures/beam.py, weights/mass.py and the dashboard, with no mechanism to detect disagreement -- and they did disagree.",
+
+  "planform": {
+    "taper": 0.5,
+    "twist_tip_deg": -2.0,
+    "section_family": "naca4",
+    "camber_digits": "24",
+    "$comment": "The dashboard silhouettes used taper 0.45 against the AVL decks' 0.50. Neither was wrong on its own; nothing could see that they differed."
+  },
+
+  "tail": {
+    "volume_coefficient": 0.55,
+    "arm_macs": 3.5,
+    "aspect_ratio": 4.5,
+    "sweep_le_deg": 12.0,
+    "$comment": "Horizontal tail sized by volume coefficient. The ARM is the load-bearing number here: it sets how long the fuselage has to be, which is a weights quantity derived from an aero assumption. That was the undeclared interface."
+  },
+
+  "fuselage": {
+    "fineness_ratio": 6.0,
+    "packing_efficiency": 0.72,
+    "volume_coefficient": 0.55,
+    "wetted_area_coefficient": 0.78,
+    "nose_fraction": 0.42,
+    "payload_pack_density": 250.0,
+    "systems_volume": 0.15,
+    "length_rule": "max(volume_driven, tail_arm_driven)",
+    "$comment": "length_rule is the fix for the interface above. Sizing on volume alone produced a body 2.9-5.0 m too short to mount the empennage, and roughly 43 kg of skin that nobody was paying for."
+  },
+
+  "materials": {
+    "spar_caps": "aluminium_7075",
+    "fuselage_shell": "glass_foam",
+    "$comment": "The round-6 campaign event switches spar_caps to carbon_uni. Changing a material here changes the configuration hash, which is exactly right: it invalidates every publication that was derived under the old one."
+  },
+
+  "lattice": {
+    "n_chord": 8,
+    "n_span": 20,
+    "span_spacing": -2.0,
+    "$comment": "Vortex-lattice density for the AVL decks. Kept here because structures reads the spanload from the same solve and must not silently use a different discretisation."
+  }
+}

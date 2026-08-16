@@ -32,26 +32,36 @@ for a medium fixed-wing UAV.</div>
 <a class="card" href="timelapse.html">
   <div class="t"><span class="dot"></span>Interactive timelapse</div>
   <div class="d">Watch the campaign run: agents publishing regions, the witness verifying,
-  the admissible set forming and collapsing. Includes the 6-D pairwise slice matrix and a
-  scrubable timeline. Hover the map for live constraint margins.</div>
+  the admissible set forming and collapsing. Includes the 6-D pairwise slice matrix, the
+  coupling belief distributions, and a scrubable timeline. Hover the map for live
+  constraint margins.</div>
 </a>
 
 <a class="card" href="writeup.html">
   <div class="t"><span class="dot"></span>Write-up</div>
-  <div class="d">The concept, the agent roles, each discipline's decisions and tolerances, the
-  design criteria, and all 12 rounds analyzed with snapshots. Includes an honesty appendix on
-  what is real computation versus illustrative physics.</div>
+  <div class="d">The concept, the agent roles, the toolchain behind the numbers (AVL vortex
+  lattice, NeuralFoil section polars, fully-stressed beam sizing), and all 12 rounds
+  analyzed with snapshots. Written for readers who are not aerospace engineers.</div>
 </a>
 
 <a class="card" href="writeup.pdf">
   <div class="t"><span class="dot"></span>Write-up (PDF)</div>
-  <div class="d">Same document, 26 pages A4 — for printing or emailing.</div>
+  <div class="d">Same document, A4 — for printing or emailing.</div>
+</a>
+
+<a class="card" href="design_shortlist.pdf">
+  <div class="t"><span class="dot"></span>Design shortlist (PDF)</div>
+  <div class="d">Twenty admissible aircraft from the final round, drawn to scale — planform,
+  span, wing loading, active constraints and coupling residuals for each. The spread across
+  the shortlist <em>is</em> the trade study.</div>
 </a>
 
 <div class="meta">
   Source, contract schema, and the campaign engine are in the repository root. Regenerate
-  everything with <code>./build.sh</code> (numpy only). The physics is illustrative — see
-  §8 of the write-up.
+  everything with <code>python build.py</code>, then <code>python report_designs.py</code>
+  and <code>python make_design_report.py</code> for the shortlist. Aerodynamics runs AVL +
+  NeuralFoil and structures runs a fully-stressed beam; what is still estimated rather than
+  computed is listed in §4 of the write-up.
 </div>
 
 </div></body></html>

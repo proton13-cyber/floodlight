@@ -1,0 +1,273 @@
+{
+  "schema_version": "1.0.0",
+  "publication_id": "aerodynamics-r3-cb659d5e",
+  "supersedes": null,
+  "discipline": "aerodynamics",
+  "round": 3,
+  "agent": {
+    "id": "aero-agent",
+    "model": "claude-opus-5",
+    "prompt_version": "aero-v0.6-avl-neuralfoil-polar",
+    "run_id": "run_2026-08-15T23:17:14Z_avlnf"
+  },
+  "design_space_ref": {
+    "id": "uav-medium",
+    "version": 1,
+    "hash": "sha256:PLACEHOLDER_COMPUTED_BY_TOOLING"
+  },
+  "mission_ref": {
+    "id": "ref-mission-A",
+    "hash": "sha256:PLACEHOLDER"
+  },
+  "configuration_ref": {
+    "id": "uav-medium-config",
+    "version": 1,
+    "hash": "sha256:54f1cdbb6c784bce81cf0c0f0a5c3d74681294aa1656a93816271530fc9cc964"
+  },
+  "created_at": "2026-08-15T23:17:14Z",
+  "status": "published",
+  "validity": {
+    "box": {
+      "S_ref": [
+        8.044605630346544,
+        24.978199380346542
+      ],
+      "AR": [
+        8.016322265660207,
+        23.95047864426103
+      ],
+      "t_c": [
+        0.08031255582670697,
+        0.17967255582670696
+      ],
+      "sweep_c4": [
+        0.04112056408457798,
+        14.997388785658924
+      ],
+      "W0": [
+        400.0,
+        1200.0
+      ],
+      "P_SL": [
+        40.0,
+        160.0
+      ]
+    },
+    "extrapolation_policy": "reject",
+    "note": "Box is the extent of DOE points whose minimum NeuralFoil analysis_confidence was >= 0.90 (256/256 points; 0 dropped). r1 clipped this box to t/c <= 0.16 and sweep <= 12 deg because XFOIL failed to converge there. NeuralFoil does not fail to converge -- it reports low confidence instead -- so that rationale no longer applies and the bound has been re-derived rather than inherited."
+  },
+  "active_subspace": [
+    {
+      "variable": "S_ref",
+      "sensitivity": 1.0,
+      "method": "doe_regression"
+    },
+    {
+      "variable": "AR",
+      "sensitivity": 0.71,
+      "method": "doe_regression"
+    },
+    {
+      "variable": "t_c",
+      "sensitivity": 0.38,
+      "method": "doe_regression"
+    },
+    {
+      "variable": "W0",
+      "sensitivity": 0.58,
+      "method": "analytic"
+    },
+    {
+      "variable": "sweep_c4",
+      "sensitivity": 0.07,
+      "method": "doe_regression"
+    },
+    {
+      "variable": "P_SL",
+      "sensitivity": 0.0,
+      "method": "analytic"
+    }
+  ],
+  "conditioning": [
+    {
+      "coupling_variable": "W_empty",
+      "assumed_value": 390.0,
+      "units": "kg",
+      "assumed_model": {
+        "form": "analytic",
+        "inputs": [
+          "W0",
+          "P_SL",
+          "S_ref",
+          "AR"
+        ],
+        "expression": "(246.52082 +0.11230425*W0 +0.97369747*P_SL +1.677915*S_ref -1.5209566*AR)",
+        "provenance": {
+          "kind": "linear_internalization",
+          "fit_rel_rmse": 0.0045,
+          "fit_worst_rel_err": 0.0166,
+          "note": "Deliberately low-order belief about the supplier, refit at each broadcast. The residual it produces varies in space (where the belief is too crude) AND in time (when it goes stale).",
+          "snapshot_of": "weights-r2-3ba60b4e"
+        }
+      },
+      "source": {
+        "type": "seed",
+        "publication_id": null,
+        "note": "Seed from the design-space registry. Sets the mid-mission mass and therefore the cruise CL at which L/D is evaluated."
+      },
+      "drift_tolerance": {
+        "kind": "relative",
+        "value": 0.05
+      }
+    }
+  ],
+  "provides": [
+    {
+      "coupling_variable": "CL_max",
+      "units": "-",
+      "surrogate": {
+        "form": "analytic",
+        "inputs": [
+          "t_c",
+          "sweep_c4",
+          "S_ref",
+          "AR"
+        ],
+        "expression": "(0.796500 + 7.987669*t_c + -25.888067*t_c**2 + 0.00070789*sweep_c4 + -0.000550617*sweep_c4**2 + 0.263126*log(2.738960*(1.037037*(S_ref/AR)**0.5)) + 0.0053182*AR + -0.000115169*AR**2 + -0.723080*t_c*log(2.738960*(1.037037*(S_ref/AR)**0.5)))",
+        "fit": {
+          "n_train": 256,
+          "r2": 0.9698,
+          "rmse": 0.00936,
+          "cv": "none (direct lstsq)"
+        },
+        "sigma": {
+          "form": "constant",
+          "value": 0.0187
+        }
+      }
+    }
+  ],
+  "constraints": [
+    {
+      "id": "AER.V_STALL",
+      "description": "Sea-level flaps-up stall speed at design gross mass must not exceed 28 m/s. CL_max is now the first-strip-stall value from AVL span loading + NeuralFoil section polars.",
+      "requirement_ref": "REQ-STALL",
+      "sense": "le_zero",
+      "normalization": {
+        "kind": "limit_relative",
+        "scale": 28.0,
+        "description": "g = (V_stall - 28)/28."
+      },
+      "criticality": "hard",
+      "surrogate": {
+        "form": "analytic",
+        "inputs": [
+          "W0",
+          "S_ref",
+          "AR",
+          "t_c",
+          "sweep_c4"
+        ],
+        "expression": "((2*W0*9.80665/(1.225*S_ref*(0.796500 + 7.987669*t_c + -25.888067*t_c**2 + 0.00070789*sweep_c4 + -0.000550617*sweep_c4**2 + 0.263126*log(2.738960*(1.037037*(S_ref/AR)**0.5)) + 0.0053182*AR + -0.000115169*AR**2 + -0.723080*t_c*log(2.738960*(1.037037*(S_ref/AR)**0.5)))))**0.5 - 28.0) / 28.0",
+        "fit": {
+          "n_train": 256,
+          "r2": 0.9698,
+          "rmse": 0.00936,
+          "cv": "inherited from the CL_max fit"
+        },
+        "sigma": {
+          "form": "constant",
+          "value": 0.015
+        }
+      },
+      "reporting": {
+        "physical_expression": "(2*W0*9.80665/(1.225*S_ref*(0.796500 + 7.987669*t_c + -25.888067*t_c**2 + 0.00070789*sweep_c4 + -0.000550617*sweep_c4**2 + 0.263126*log(2.738960*(1.037037*(S_ref/AR)**0.5)) + 0.0053182*AR + -0.000115169*AR**2 + -0.723080*t_c*log(2.738960*(1.037037*(S_ref/AR)**0.5)))))**0.5",
+        "limit": 28.0,
+        "units": "m/s"
+      }
+    },
+    {
+      "id": "AER.LD_CRUISE",
+      "description": "Cruise L/D at mid-mission mass. Induced drag uses the AVL Trefftz-plane span efficiency; profile drag is the strip-integrated wing term plus a declared non-wing parasite build-up. Moves when weights republishes W_empty.",
+      "requirement_ref": "REQ-LD",
+      "sense": "le_zero",
+      "normalization": {
+        "kind": "limit_relative",
+        "scale": 12.0,
+        "description": "g = (12 - L/D)/12."
+      },
+      "criticality": "hard",
+      "surrogate": {
+        "form": "analytic",
+        "inputs": [
+          "W_empty",
+          "W0",
+          "S_ref",
+          "AR",
+          "t_c",
+          "sweep_c4"
+        ],
+        "expression": "(12.0 - ((2*(W_empty + 90.0 + 0.09*W0)*9.80665/(1.225*40.0**2*S_ref)) / (((0.0011480 + 0.0008960*log(2.738960*(1.037037*(S_ref/AR)**0.5)) + -0.0003197*log(2.738960*(1.037037*(S_ref/AR)**0.5))**2 + 0.0677855*t_c + -0.1791137*t_c**2 + -0.0067585*t_c*log(2.738960*(1.037037*(S_ref/AR)**0.5))) + (0.0062 + 0.14/S_ref)) + (-0.0004963 + -0.0018510*log(2.738960*(1.037037*(S_ref/AR)**0.5)) + 0.0027699*log(2.738960*(1.037037*(S_ref/AR)**0.5))**2 + -0.1435933*t_c + 0.7205483*t_c**2 + -0.0119181*t_c*log(2.738960*(1.037037*(S_ref/AR)**0.5)))*(2*(W_empty + 90.0 + 0.09*W0)*9.80665/(1.225*40.0**2*S_ref)) + (0.0177468 + -0.0029059*log(2.738960*(1.037037*(S_ref/AR)**0.5)) + -0.0023824*log(2.738960*(1.037037*(S_ref/AR)**0.5))**2 + -0.0051408*t_c + -0.3730673*t_c**2 + 0.0350815*t_c*log(2.738960*(1.037037*(S_ref/AR)**0.5)))*(2*(W_empty + 90.0 + 0.09*W0)*9.80665/(1.225*40.0**2*S_ref))**2 + (2*(W_empty + 90.0 + 0.09*W0)*9.80665/(1.225*40.0**2*S_ref))**2 / (pi*(1.003891 + -0.00116195*AR + 0.00017599*sweep_c4)*AR)))) / 12.0",
+        "fit": {
+          "n_train": 256,
+          "r2": 0.7996,
+          "rmse": 0.000582,
+          "cv": "composed from the span-efficiency fit and the three drag-polar coefficient fits; worst reported"
+        },
+        "sigma": {
+          "form": "constant",
+          "value": 0.025
+        }
+      },
+      "reporting": {
+        "physical_expression": "((2*(W_empty + 90.0 + 0.09*W0)*9.80665/(1.225*40.0**2*S_ref)) / (((0.0011480 + 0.0008960*log(2.738960*(1.037037*(S_ref/AR)**0.5)) + -0.0003197*log(2.738960*(1.037037*(S_ref/AR)**0.5))**2 + 0.0677855*t_c + -0.1791137*t_c**2 + -0.0067585*t_c*log(2.738960*(1.037037*(S_ref/AR)**0.5))) + (0.0062 + 0.14/S_ref)) + (-0.0004963 + -0.0018510*log(2.738960*(1.037037*(S_ref/AR)**0.5)) + 0.0027699*log(2.738960*(1.037037*(S_ref/AR)**0.5))**2 + -0.1435933*t_c + 0.7205483*t_c**2 + -0.0119181*t_c*log(2.738960*(1.037037*(S_ref/AR)**0.5)))*(2*(W_empty + 90.0 + 0.09*W0)*9.80665/(1.225*40.0**2*S_ref)) + (0.0177468 + -0.0029059*log(2.738960*(1.037037*(S_ref/AR)**0.5)) + -0.0023824*log(2.738960*(1.037037*(S_ref/AR)**0.5))**2 + -0.0051408*t_c + -0.3730673*t_c**2 + 0.0350815*t_c*log(2.738960*(1.037037*(S_ref/AR)**0.5)))*(2*(W_empty + 90.0 + 0.09*W0)*9.80665/(1.225*40.0**2*S_ref))**2 + (2*(W_empty + 90.0 + 0.09*W0)*9.80665/(1.225*40.0**2*S_ref))**2 / (pi*(1.003891 + -0.00116195*AR + 0.00017599*sweep_c4)*AR)))",
+        "limit": 12.0,
+        "units": "-"
+      }
+    }
+  ],
+  "objectives": [
+    {
+      "id": "AER.CD0",
+      "direction": "minimize",
+      "units": "-",
+      "surrogate": {
+        "form": "analytic",
+        "inputs": [
+          "S_ref",
+          "AR",
+          "t_c"
+        ],
+        "expression": "((0.0011480 + 0.0008960*log(2.738960*(1.037037*(S_ref/AR)**0.5)) + -0.0003197*log(2.738960*(1.037037*(S_ref/AR)**0.5))**2 + 0.0677855*t_c + -0.1791137*t_c**2 + -0.0067585*t_c*log(2.738960*(1.037037*(S_ref/AR)**0.5))) + (0.0062 + 0.14/S_ref))",
+        "fit": {
+          "n_train": 256,
+          "r2": 0.7996,
+          "rmse": 0.000222,
+          "cv": "polar intercept, wing term only; the non-wing term is declared, not fitted"
+        }
+      }
+    }
+  ],
+  "evidence": {
+    "tool": {
+      "name": "AVL + NeuralFoil",
+      "version": "3.32 / 0.3.x",
+      "fidelity": "low"
+    },
+    "method_ref": "Vortex-lattice span loading (AVL, cosine-spaced 8x20 per semispan, trimmed to CL=0.6) coupled strip-wise to NeuralFoil 2-D section polars at each strip's local Reynolds number, with simple-sweep normalisation. CL_max = min over strips of (section cl_max / local loading ratio), i.e. first-strip stall. Profile drag is the area-weighted strip integration.",
+    "n_evaluations": 256,
+    "doe": {
+      "type": "scrambled_halton",
+      "seed": 991
+    },
+    "input_deck_refs": [
+      {
+        "uri": "aero/geometry.py::design_vector_to_avl",
+        "sha256": "sha256:PLACEHOLDER",
+        "media_type": "text/x-python"
+      }
+    ],
+    "convergence_notes": "No AVL failures at 20 spanwise stations. NeuralFoil analysis_confidence stayed >= 0.90 across 256/256 points. Verified against Warren 12 (CL_alpha 0.14% and Cm_alpha 0.17% from published values) and an elliptic planform (e = 1.0000).",
+    "known_limitations": "Wing-only geometry: no fuselage, tail, nacelle or interference in the AVL deck. Non-wing parasite drag (fuselage, tail, nacelle, gear, interference). NOT from AVL or NeuralFoil -- the deck is a wing only. Flat-plate build-up at a fixed wetted-area ratio, carried over from r1 in form and magnitude. This term is illustrative; the wing term next to it is not. Planform assumptions are pinned, not designed: taper 0.5, -2 deg linear washout, NACA 24xx sections with thickness quantised to whole percent. Incompressible (Mach 0). CL_max is a 2-D section maximum applied strip-by-strip with no 3-D stall progression or hysteresis. CD0 IS EVALUATED AT A SINGLE REFERENCE CL AND CARRIES NO DRAG-DUE-TO-LIFT: the strip integration was run at CL=0.6, and the fitted term is then used as a CL-independent CD0 in the L/D constraint, exactly as r1 did. Because induced drag here is the inviscid Trefftz value and no viscous lift-dependent drag is added anywhere, the resulting L/D is OPTIMISTIC, and the cruise-L/D margin is correspondingly generous. The fix is cheap and not yet done: run the strip integration at two CLs and publish dCDp/dCL^2 alongside CD0. Treat AER.LD_CRUISE as an upper bound until that lands. No sampled design stalled outboard of eta=0.7."
+  }
+}
